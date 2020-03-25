@@ -1,0 +1,43 @@
+{
+  "name": "@artsy/gudetama",
+  "version": "1.0.0-0",
+  "description": "Make your CI scripts as lazy as possible",
+  "main": "lib/gudetama.js",
+  "bin": {
+    "gudetama": "./lib/cli.js"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "files": [
+    "index.js",
+    "bin/",
+    "lib/"
+  ],
+  "repository": "https://github.com/artsy/gudetama",
+  "author": "David Sheldrick <d.j.sheldrick@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "type-check": "tsc --pretty --noEmit"
+  },
+  "lint-changed": {
+    "*.ts": [
+      "echo"
+    ]
+  },
+  "dependencies": {
+    "aws-sdk": "^2.644.0",
+    "fs-extra": "^9.0.0",
+    "glob": "^7.1.6",
+    "rimraf": "^3.0.2",
+    "tar-fs": "^2.0.0",
+    "yargs": "^15.3.1"
+  },
+  "devDependencies": {
+    "@artsy/auto-config": "^1.0.2",
+    "@types/node": "^13.7.7",
+    "prettier": "^2.0.2",
+    "typescript": "^3.8.3"
+  }
+}
