@@ -1,47 +1,34 @@
 // @ts-check
 
-const nodeGlob = require('glob')
+import nodeGlob from 'glob'
 
-const crypto = require('crypto')
-const fs = require('fs-extra')
-const path = require('path')
-const { currentManifestDir } = require('./manifestDir')
-const slugify = require('@sindresorhus/slugify')
+import fs from 'fs-extra'
+import path from 'path'
+import { currentManifestDir } from './manifestDir'
+import slugify from '@sindresorhus/slugify'
+import { hash } from './hash'
+import { Config } from '../config'
 
-/**
- * @param {string} file
- */
-function hash(file) {
-  const md5 = crypto.createHash('md5')
-  md5.update(fs.readFileSync(file))
-  return md5.digest('hex')
-}
-
-/**
- * @param glob {string}
- */
-function expandGlob(glob) {
+function expandGlob(glob: string) {
   return nodeGlob.sync(glob, { nodir: true })
 }
 
-/**
- * @param config {import('../config').Config}
- * @param stepName {string}
- * @returns {Set<string>}
- */
-function getFiles(config, stepName) {
+function getFiles({
+  config,
+  stepName,
+}: {
+  config: Config
+  stepName: string | number
+}) {
   const userConfig = config.steps[stepName]
   if (!userConfig) {
     console.error(`No step found called '${stepName}'`)
     process.exit(1)
   }
-  /**
-   * @type {Set<string>}
-   */
-  const files = new Set()
+  const files = new Set<string>()
 
   for (const extendedManifest of userConfig.inputFiles.extends || []) {
-    for (const file of getFiles(config, extendedManifest)) {
+    for (const file of getFiles({ config, stepName: extendedManifest })) {
       files.add(file)
     }
   }
@@ -59,17 +46,19 @@ function getFiles(config, stepName) {
   return files
 }
 
-/**
- * @param {import('../config').Config} config
- * @param {string} stepName
- */
-async function writeCurrentManifest(config, stepName) {
+export async function writeCurrentManifest({
+  config,
+  stepName,
+}: {
+  config: Config
+  stepName: string
+}) {
   const slug = slugify(stepName)
   if (!fs.existsSync(currentManifestDir)) {
     fs.mkdirpSync(currentManifestDir)
   }
   const filename = path.join(currentManifestDir, slug)
-  const files = getFiles(config, stepName)
+  const files = getFiles({ config, stepName })
   let out = fs.createWriteStream(filename)
 
   const filesArray = [...files]
@@ -83,5 +72,3 @@ async function writeCurrentManifest(config, stepName) {
     out.close()
   })
 }
-
-module.exports.writeCurrentManifest = writeCurrentManifest

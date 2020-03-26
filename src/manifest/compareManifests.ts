@@ -1,15 +1,11 @@
 // @ts-check
 
-const fs = require('fs')
-const path = require('path')
-const { currentManifestDir, previousManifestDir } = require('./manifestDir')
-const { bold, gray } = require('../colors')
+import fs from 'fs'
+import path from 'path'
+import { currentManifestDir, previousManifestDir } from './manifestDir'
+import { bold, gray } from '../colors'
 
-/**
- * @param stepName {string}
- * @returns {string[]}
- */
-function compareManifests(stepName) {
+export function compareManifests({ stepName }: { stepName: string }) {
   const changes = []
   const previousLines = fs
     .readFileSync(path.join(currentManifestDir, 'previous', stepName))
@@ -43,5 +39,3 @@ function compareManifests(stepName) {
 
   return changes
 }
-
-module.exports.compareManifests = compareManifests

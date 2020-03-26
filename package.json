@@ -3,6 +3,7 @@
   "version": "1.0.0-0",
   "description": "Make your CI scripts as lazy as possible",
   "main": "lib/gudetama.js",
+  "private": true,
   "bin": {
     "gudetama": "./lib/cli.js"
   },
@@ -19,6 +20,9 @@
   "author": "David Sheldrick <d.j.sheldrick@gmail.com>",
   "license": "MIT",
   "scripts": {
+    "build": "rollup --config && gzip dist/cli.js",
+    "deploy": "",
+    "babel-node": "babel-node --extensions '.ts'",
     "type-check": "tsc --pretty --noEmit"
   },
   "lint-changed": {
@@ -28,7 +32,10 @@
   },
   "dependencies": {
     "@sindresorhus/slugify": "^0.11.0",
+    "@types/fs-extra": "^8.1.0",
     "aws-sdk": "^2.644.0",
+    "chalk": "^3.0.0",
+    "crypto-js": "^4.0.0",
     "fs-extra": "^9.0.0",
     "glob": "^7.1.6",
     "rimraf": "^3.0.2",
@@ -37,8 +44,23 @@
   },
   "devDependencies": {
     "@artsy/auto-config": "^1.0.2",
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.9.0",
+    "@babel/node": "^7.8.7",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/plugin-transform-runtime": "^7.9.0",
+    "@babel/preset-env": "^7.9.0",
+    "@babel/preset-typescript": "^7.9.0",
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-json": "^4.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
+    "@rollup/plugin-typescript": "^4.0.0",
     "@types/node": "^13.7.7",
+    "@types/rimraf": "^3.0.0",
     "prettier": "^2.0.2",
+    "rollup": "^2.2.0",
+    "rollup-plugin-babel": "^4.4.0",
+    "tslib": "^1.11.1",
     "typescript": "^3.8.3"
   }
 }

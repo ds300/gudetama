@@ -1,37 +1,29 @@
 // @ts-check
 
-const fs = require('fs')
-const path = require('path')
-const rimraf = require('rimraf')
-const { spawnSync } = require('child_process')
-const { S3CacheBackend } = require('./S3CacheBackend')
-const { time } = require('../time')
+import fs from 'fs'
+import path from 'path'
+import rimraf from 'rimraf'
+import { spawnSync } from 'child_process'
+import { S3CacheBackend } from './S3CacheBackend'
+import { time } from '../time'
 
-/**
- * @typedef {{ getObject(key: string, path: string): Promise<boolean>, putObject(key: string, path: string): Promise<void> }} CacheBackend
- */
+export interface CacheBackend {
+  getObject(key: string, path: string): Promise<boolean>
+  putObject(key: string, path: string): Promise<void>
+}
 
-/**
- * @typedef {{ accessKeyId: string, secretAccessKey: string, bucket: string }} S3Config
- */
-class Cache {
-  /**
-   * @param {CacheBackend} cache
-   */
-  constructor(cache = new S3CacheBackend()) {
-    this.cache = cache
-    this.tmpdir = fs.mkdtempSync(path.join(process.env.TMPDIR, 'gudetama-'))
+export class Cache {
+  private tmpdir: string
+  constructor(public cache: CacheBackend = new S3CacheBackend()) {
+    this.tmpdir = fs.mkdtempSync(
+      path.join(process.env.TMPDIR || '/tmp', 'gudetama-')
+    )
     process.addListener('exit', () => {
       rimraf.sync(this.tmpdir)
     })
   }
 
-  /**
-   * @param {string} key
-   * @param {string[]} paths
-   * @returns {Promise<void>}
-   */
-  async save(key, paths) {
+  async save(key: string, paths: string[]) {
     const tarballPath = path.join(this.tmpdir, key)
     time('Creating archive', () => {
       exec('tar', ['cf', tarballPath, ...paths])
@@ -46,7 +38,7 @@ class Cache {
    * @param {string} key
    * @returns {Promise<boolean>}
    */
-  async restore(key) {
+  async restore(key: string) {
     const tarballPath = path.join(this.tmpdir, key)
     if (
       await time('Downloading archive', () =>
@@ -63,13 +55,7 @@ class Cache {
   }
 }
 
-module.exports.Cache = Cache
-
-/**
- * @param {string} command
- * @param {string[]} args
- */
-function exec(command, args) {
+function exec(command: string, args: string[]) {
   const result = spawnSync(command, args)
   if (result.status !== 0) {
     console.error(`ERROR: Shell command failed: ${command} ${args.join(' ')}`)

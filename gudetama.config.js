@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * @type {import('./lib/config').ConfigFile}
+ * @type {import('./src/config').ConfigFile}
  */
 const config = {
   steps: {
