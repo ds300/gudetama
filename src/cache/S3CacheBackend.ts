@@ -1,6 +1,4 @@
 // @ts-check
-import S3 from 'aws-sdk/clients/s3'
-import aws from 'aws-sdk'
 import fs from 'fs'
 import https from 'https'
 import crypto from 'crypto'
@@ -14,47 +12,20 @@ export interface S3Config {
 }
 
 export class S3CacheBackend implements CacheBackend {
-  private bucket: string
-  private client: S3
-  constructor({
-    accessKeyId,
-    secretAccessKey,
-    bucket,
-  }: S3Config = defaultConfig) {
-    this.bucket = bucket
-    this.client = new S3({
-      credentials: new aws.Credentials({ accessKeyId, secretAccessKey }),
-    })
-  }
+  constructor(public config: S3Config = defaultConfig) {}
   async getObject(key: string, filePath: string) {
-    const inStream = this.client
-      .getObject({
-        Bucket: this.bucket,
-        Key: key,
-      })
-      .createReadStream()
-    const outStream = fs.createWriteStream(filePath)
-    inStream.pipe(outStream)
-    return await new Promise<boolean>((resolve, reject) => {
-      inStream.on('error', reject).on('end', () => resolve(true))
-    }).catch((error) => {
-      if (error.code === 'NoSuchKey') {
-        return false
-      } else {
-        throw error
-      }
+    return s3Download({
+      objectKey: key,
+      filePath,
+      s3Config: this.config,
     })
   }
-  async putObject(key: string, path: string) {
-    const inStream = fs.createReadStream(path)
-    return this.client
-      .putObject({
-        Key: key,
-        Bucket: this.bucket,
-        Body: inStream,
-      })
-      .promise()
-      .then(console.log)
+  async putObject(key: string, filePath: string) {
+    return s3Upload({
+      filePath,
+      objectKey: key,
+      s3Config: this.config,
+    })
   }
 }
 
@@ -70,9 +41,9 @@ import chalk from 'chalk'
 
 function hmac(key: string, string: string, encoding?: 'hex') {
   return crypto
-    .createHmac("sha256", key)
-    .update(string, "utf8")
-    .digest(encoding!);
+    .createHmac('sha256', key)
+    .update(string, 'utf8')
+    .digest(encoding!)
 }
 
 function computeSignature({
@@ -103,10 +74,6 @@ async function s3Upload({
   objectKey: string
   s3Config: S3Config
 }) {
-  ;`AWS4-HMAC-SHA256
-  20200326T122324Z
-  20200326/us-east-1/s3/aws4_request
-  d50780dd673820a96cac1a74cc56e172440026b4f58dbe9588e9993b1c7b714a`
   const contentHash = hash(filePath)
   const now = new Date()
   const dateISO = now.toISOString().replace(/-|:|\.\d+/g, '')
@@ -125,7 +92,6 @@ x-amz-date:${dateISO}
 
 ${signedHeaders}
 ${contentHash}`
-  // TODO: try with ending newline
   const stringToSign =
     'AWS4-HMAC-SHA256' +
     '\n' +
@@ -142,11 +108,6 @@ ${contentHash}`
     stringToSign,
   })
 
-  console.log(chalk.red(canonicalRequest))
-  console.log()
-  console.log(chalk.red(stringToSign))
-  console.log()
-  console.log(chalk.red(signature))
   const req = https.request({
     method: 'PUT',
     host,
@@ -160,25 +121,28 @@ ${contentHash}`
     },
   })
 
-  await new Promise<void>((resolve, reject) => {
-    fs.createReadStream(filePath)
-      .pipe(req)
-      .on('finish', resolve)
-      .on('error', reject)
-  })
+  fs.createReadStream(filePath).pipe(req)
 
   return new Promise<void>((resolve, reject) => {
     req.on('response', (res) => {
-      console.log('got response')
       const bufs: Buffer[] = []
       res.on('data', function (d) {
-        console.log('got data')
         bufs.push(d)
       })
       res.on('end', function () {
-        console.log('got ended', res.statusCode, res.statusMessage)
-        const buf = Buffer.concat(bufs)
-        console.log(chalk.green(buf.toString()))
+        if (res.statusCode! !== 200) {
+          console.error(
+            `aws s3 PUT Request failed with status code ${res.statusCode}: ${res.statusMessage}`
+          )
+
+          const buf = Buffer.concat(bufs)
+          console.error(`\n${chalk.red(buf.toString())}\n`)
+
+          console.error(
+            `aws s3 PUT Request failed with status code ${res.statusCode}: ${res.statusMessage}`
+          )
+          process.exit(1)
+        }
         resolve()
       })
       res.on('error', reject)
@@ -186,12 +150,94 @@ ${contentHash}`
   })
 }
 
-async function run() {
-  await s3Upload({
-    s3Config: defaultConfig,
-    filePath: 'package.json',
-    objectKey: 'test-custom-upload',
+async function s3Download({
+  objectKey,
+  s3Config,
+  filePath,
+}: {
+  objectKey: string
+  filePath: string
+  s3Config: S3Config
+}) {
+  const now = new Date()
+  const dateISO = now.toISOString().replace(/-|:|\.\d+/g, '')
+  const date = dateISO.slice(0, 8)
+  const scope = `${date}/${s3Config.region}/s3/aws4_request`
+  const credential = `${s3Config.accessKeyId}/${scope}`
+  const host = `${s3Config.bucket}.s3.amazonaws.com`
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date'
+  const canonicalRequest = `GET
+/${objectKey}
+
+host:${host}
+x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+x-amz-date:${dateISO}
+
+${signedHeaders}
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+  const stringToSign =
+    'AWS4-HMAC-SHA256' +
+    '\n' +
+    dateISO +
+    '\n' +
+    scope +
+    '\n' +
+    hashString(canonicalRequest)
+
+  const signature = computeSignature({
+    date,
+    region: s3Config.region,
+    secretAccessKey: s3Config.secretAccessKey,
+    stringToSign,
+  })
+
+  const req = https.request({
+    method: 'GET',
+    host,
+    path: `/${objectKey}`,
+    headers: {
+      Aceept: 'application/octet-stream',
+      Authorization: `AWS4-HMAC-SHA256 Credential=${credential},SignedHeaders=${signedHeaders},Signature=${signature}`,
+      'x-amz-content-sha256':
+        'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      'x-amz-date': dateISO,
+    },
+  })
+
+  return new Promise<boolean>((resolve, reject) => {
+    req.on('response', (res) => {
+      const fh = fs.openSync(filePath, 'a')
+      let totalBytesWritten = 0
+      res.on('data', function (d) {
+        fs.writeSync(fh, d, totalBytesWritten)
+        totalBytesWritten += d.length
+      })
+      res.on('end', function () {
+        fs.closeSync(fh)
+        switch (res.statusCode) {
+          case 404:
+            resolve(false)
+            break
+          case 200:
+            resolve(true)
+            break
+          default:
+            console.error(
+              `aws s3 GET Request failed with status code ${res.statusCode}: ${res.statusMessage}`
+            )
+            console.error(
+              `\n${chalk.red(fs.readFileSync(filePath).toString())}\n`
+            )
+            fs.unlinkSync(filePath)
+            console.error(
+              `aws s3 GET Request failed with status code ${res.statusCode}: ${res.statusMessage}`
+            )
+            process.exit(1)
+        }
+      })
+      res.on('error', reject)
+    })
+
+    req.end()
   })
 }
-
-run()

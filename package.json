@@ -20,7 +20,8 @@
   "author": "David Sheldrick <d.j.sheldrick@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "rollup --config && gzip dist/cli.js",
+    "build": "rollup --config",
+    "compress": "gzip dist/cli.js",
     "deploy": "",
     "babel-node": "babel-node --extensions '.ts'",
     "type-check": "tsc --pretty --noEmit"
@@ -33,7 +34,6 @@
   "dependencies": {
     "@sindresorhus/slugify": "^0.11.0",
     "@types/fs-extra": "^8.1.0",
-    "aws-sdk": "^2.644.0",
     "chalk": "^3.0.0",
     "crypto-js": "^4.0.0",
     "fs-extra": "^9.0.0",
