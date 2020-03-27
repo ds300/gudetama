@@ -1,14 +1,20 @@
 import { spawnSync } from 'child_process'
-import { Config } from './config'
+import { getStep, getStepKey } from './config'
+import { store } from './store/store'
+import { restoreCaches } from './restoreCaches'
 
-export function runCommand({
-  config,
-  stepName,
-}: {
-  config: Config
-  stepName: string
-}) {
-  const artifacts = config.steps[stepName].artifacts
-  const command = config.steps[stepName].command || stepName
+function intersection(a: string[], b: string[]) {
+  const result = []
+  for (const e in a) {
+    if (b.includes(e)) {
+      result.push(e)
+    }
+  }
+  return result
+}
+
+export function runCommand(stepName: string) {
+  const { artifacts, caches, command = stepName } = getStep(stepName)
   const result = spawnSync(command)
+  if (result.status)
 }

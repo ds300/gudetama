@@ -1,8 +1,7 @@
-// @ts-check
 import fs from 'fs'
 import https from 'https'
 import crypto from 'crypto'
-import { CacheBackend } from './Cache'
+import { GudetamaStoreBackend } from './GudetamaStore'
 
 export interface S3Config {
   accessKeyId: string
@@ -11,7 +10,7 @@ export interface S3Config {
   region: string
 }
 
-export class S3CacheBackend implements CacheBackend {
+export class S3StoreBackend implements GudetamaStoreBackend {
   constructor(public config: S3Config = defaultConfig) {}
   async getObject(key: string, filePath: string) {
     return s3Download({
@@ -36,7 +35,7 @@ const defaultConfig: S3Config = {
   region: process.env.GUDETAMA_S3_REGION || 'us-east-1',
 }
 
-import { hash, hashString } from '../manifest/hash'
+import { hashFile, hashString } from '../manifest/hash'
 import chalk from 'chalk'
 
 function hmac(key: string, string: string, encoding?: 'hex') {
@@ -74,7 +73,7 @@ async function s3Upload({
   objectKey: string
   s3Config: S3Config
 }) {
-  const contentHash = hash(filePath)
+  const contentHash = hashFile(filePath)
   const now = new Date()
   const dateISO = now.toISOString().replace(/-|:|\.\d+/g, '')
   const date = dateISO.slice(0, 8)

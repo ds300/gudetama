@@ -1,21 +1,29 @@
-// @ts-check
+import { GudetamaStoreBackend } from './store/GudetamaStore'
+import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
+import slugify from '@sindresorhus/slugify'
+import { log } from './log'
+import { S3StoreBackend } from './store/S3StoreBackend'
+import { hashString } from './manifest/hash'
+import stringify from 'fast-json-stable-stringify'
 
-interface InputFiles {
+export interface InputFiles {
   extends?: string[]
   include?: string[]
   exclude?: string[]
 }
 
-interface Step {
+export interface Step {
   inputFiles: InputFiles
   artifacts?: string[]
   caches?: string[]
   command?: string
-  alwaysRunOnBranches: string[]
-  neverRunOnBranches: string[]
+  alwaysRunOnBranches?: string[]
+  neverRunOnBranches?: string[]
 }
 
-interface Steps {
+export interface Steps {
   [step_name: string]: Step
 }
 
@@ -26,22 +34,10 @@ interface CIConfig {
 
 export interface ConfigFile {
   steps: Steps
-  getCacheBackend?(): CacheBackend
+  getCacheBackend?(): GudetamaStoreBackend
   ci?: CIConfig
+  manifestDir?: string
 }
-
-export interface Config {
-  steps: Steps
-  cache: Cache
-  ci: CIConfig
-}
-
-import { S3CacheBackend } from './cache/S3CacheBackend'
-import { Cache, CacheBackend } from './cache/Cache'
-import { execSync } from 'child_process'
-import fs from 'fs'
-import path from 'path'
-import slugify from '@sindresorhus/slugify'
 
 function getCurrentBranch() {
   try {
@@ -54,15 +50,12 @@ function getCurrentBranch() {
   }
 }
 
-function checkStepNamesDontClash(config: Config) {
-  /**
-   * @type {Map<string, string>}
-   */
-  const keys = new Map()
+function checkStepNamesDontClash(config: ConfigFile) {
+  const keys = new Map<String, String>()
   for (const key of Object.keys(config.steps)) {
     const slug = slugify(key)
     if (keys.has(slug)) {
-      console.error(
+      log.fail(
         `Step names '${key}' and '${keys.get(
           slug
         )}' are too similar. They both become '${slug}' when slugified.`
@@ -73,31 +66,29 @@ function checkStepNamesDontClash(config: Config) {
   }
 }
 
-/**
- * @returns {Config}
- */
-function loadConfig() {
+function loadConfig(): Required<ConfigFile> {
   const file = process.env.GUDETAMA_CONFIG_PATH || './gudetama.config.js'
   if (!fs.existsSync(file)) {
-    console.error(`Can't find gudetama config file at '${file}'`)
-    process.exit(1)
+    log.fail(`Can't find gudetama config file at '${file}'`)
   }
 
-  const { getCacheBackend, steps, ci } = {
-    getCacheBackend() {
-      return new S3CacheBackend()
-    },
+  const userConfig = require(path.join(process.cwd(), file)) as ConfigFile
+
+  const config = {
     ci: {
       currentBranch:
         process.env.CIRCLE_BRANCH ||
         process.env.TRAVIS_BRANCH ||
         getCurrentBranch(),
       primaryBranch: 'master',
+      ...userConfig.ci,
     },
-    ...(require(path.join(process.cwd(), file)) as ConfigFile),
+    manifestDir: '.gudetama-manifests',
+    getCacheBackend() {
+      return new S3StoreBackend()
+    },
+    ...userConfig,
   }
-
-  const config: Config = { steps, cache: new Cache(getCacheBackend()), ci }
 
   checkStepNamesDontClash(config)
 
@@ -105,3 +96,19 @@ function loadConfig() {
 }
 
 export const config = loadConfig()
+
+export function getStep(stepName: string) {
+  return config.steps[stepName] ?? log.fail(`No step called '${stepName}'`)
+}
+
+export function getStepKey(stepName: string) {
+  const step = getStep(stepName)
+  return slugify(stepName) + '-' + hashString(stringify(step))
+}
+
+export function getManifestPath(
+  stepName: string,
+  currentOrPrevious: 'current' | 'previous'
+) {
+  return path.join(config.manifestDir, currentOrPrevious, slugify(stepName))
+}

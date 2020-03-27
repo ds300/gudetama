@@ -1,10 +1,9 @@
-// @ts-check
 import crypto from 'crypto'
 import fs from 'fs'
 
 const oneMegabyte = 1024 * 1024
 
-export function hash(filePath: string) {
+export function hashFile(filePath: string) {
   const fileSize = fs.statSync(filePath).size
   if (fileSize < 4 * oneMegabyte) {
     return hashString(fs.readFileSync(filePath))

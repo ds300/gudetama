@@ -1,20 +1,19 @@
-// @ts-check
-
 import fs from 'fs'
 import path from 'path'
 import rimraf from 'rimraf'
 import { spawnSync } from 'child_process'
-import { S3CacheBackend } from './S3CacheBackend'
+import { S3StoreBackend } from './S3StoreBackend'
 import { time } from '../time'
+import { log } from '../log'
 
-export interface CacheBackend {
+export interface GudetamaStoreBackend {
   getObject(key: string, path: string): Promise<boolean>
   putObject(key: string, path: string): Promise<void>
 }
 
-export class Cache {
+export class GudetamaStore {
   private tmpdir: string
-  constructor(public cache: CacheBackend = new S3CacheBackend()) {
+  constructor(public cache: GudetamaStoreBackend = new S3StoreBackend()) {
     this.tmpdir = fs.mkdtempSync(
       path.join(process.env.TMPDIR || '/tmp', 'gudetama-')
     )
@@ -33,11 +32,6 @@ export class Cache {
     })
   }
 
-  /**
-   *
-   * @param {string} key
-   * @returns {Promise<boolean>}
-   */
   async restore(key: string) {
     const tarballPath = path.join(this.tmpdir, key)
     if (
@@ -58,8 +52,8 @@ export class Cache {
 function exec(command: string, args: string[]) {
   const result = spawnSync(command, args)
   if (result.status !== 0) {
-    console.error(`ERROR: Shell command failed: ${command} ${args.join(' ')}`)
-    console.error(`\n${result.stderr.toString()}`)
-    process.exit(1)
+    log.fail(`ERROR: Shell command failed: ${command} ${args.join(' ')}`, {
+      detail: result.stderr.toString(),
+    })
   }
 }

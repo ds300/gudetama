@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * @type {import('./src/config').ConfigFile}
  */

@@ -1,18 +1,15 @@
-// @ts-check
-
 import fs from 'fs'
-import path from 'path'
-import { currentManifestDir, previousManifestDir } from './manifestDir'
-import { bold, gray } from '../colors'
+import { getManifestPath } from '../config'
+import chalk from 'chalk'
 
-export function compareManifests({ stepName }: { stepName: string }) {
+export function compareManifests(stepName: string) {
   const changes = []
   const previousLines = fs
-    .readFileSync(path.join(currentManifestDir, 'previous', stepName))
+    .readFileSync(getManifestPath(stepName, 'previous'))
     .toString()
     .split('\n')
   const currentLines = fs
-    .readFileSync(path.join(previousManifestDir, 'current', stepName))
+    .readFileSync(getManifestPath(stepName, 'current'))
     .toString()
     .split('\n')
 
@@ -26,14 +23,14 @@ export function compareManifests({ stepName }: { stepName: string }) {
       i++
       j++
       if (previousHash !== currentHash) {
-        changes.push(`${bold(fileCurrent)} ${gray('was modified')}`)
+        changes.push(`${chalk.bold(fileCurrent)} was modified`)
       }
     } else if (filePrevious < fileCurrent || (filePrevious && !fileCurrent)) {
       i++
-      changes.push(`${bold(filePrevious)} ${gray('was deleted')}`)
+      changes.push(`${chalk.bold(filePrevious)} was deleted`)
     } else {
       j++
-      changes.push(`${bold(fileCurrent)} ${gray('was created')}`)
+      changes.push(`${chalk.bold(fileCurrent)} was created`)
     }
   }
 
