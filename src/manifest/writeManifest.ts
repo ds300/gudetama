@@ -1,20 +1,17 @@
 import fs from 'fs-extra'
 import { hashFile } from './hash'
 import path from 'path'
+import { getManifestPath } from '../config'
+import { getManifestFiles } from './getManifestFiles'
 
-export async function writeManifest({
-  files,
-  outputPath,
-}: {
-  files: string[]
-  outputPath: string
-}) {
+export async function writeManifest({ stepName }: { stepName: string }) {
+  const outputPath = getManifestPath({ stepName, currentOrPrevious: 'current' })
   if (!fs.existsSync(path.dirname(outputPath))) {
     fs.mkdirpSync(path.dirname(outputPath))
   }
   const out = fs.createWriteStream(outputPath)
 
-  const filesArray = [...files]
+  const filesArray = [...getManifestFiles({ stepName })]
   filesArray.sort()
   for (const file of filesArray) {
     out.write(`${file}\t${hashFile(file)}\n`)

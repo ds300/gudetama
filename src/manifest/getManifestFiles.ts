@@ -1,12 +1,12 @@
 import { getStep } from '../config'
 import glob from 'glob'
 
-export function getManifestFiles(stepName: string) {
-  const { inputFiles } = getStep(stepName)
+export function getManifestFiles({ stepName }: { stepName: string }) {
+  const { inputFiles } = getStep({ stepName })
   const files = new Set<string>()
 
-  for (const extendedManifest of inputFiles.extends || []) {
-    for (const file of getManifestFiles(extendedManifest)) {
+  for (const extendedStepName of inputFiles.extends || []) {
+    for (const file of getManifestFiles({ stepName: extendedStepName })) {
       files.add(file)
     }
   }

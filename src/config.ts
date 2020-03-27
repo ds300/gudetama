@@ -6,7 +6,7 @@ import slugify from '@sindresorhus/slugify'
 import { log } from './log'
 import { S3StoreBackend } from './store/S3StoreBackend'
 import { hashString } from './manifest/hash'
-import stringify from 'fast-json-stable-stringify'
+import stableStringify from 'fast-json-stable-stringify'
 
 export interface InputFiles {
   extends?: string[]
@@ -16,11 +16,14 @@ export interface InputFiles {
 
 export interface Step {
   inputFiles: InputFiles
+  inputCommands: string[]
   artifacts?: string[]
   caches?: string[]
   command?: string
-  alwaysRunOnBranches?: string[]
-  neverRunOnBranches?: string[]
+  branches?: {
+    only?: string[]
+    ignore?: string[]
+  }
 }
 
 export interface Steps {
@@ -37,6 +40,7 @@ export interface ConfigFile {
   getCacheBackend?(): GudetamaStoreBackend
   ci?: CIConfig
   manifestDir?: string
+  cacheVersion: number
 }
 
 function getCurrentBranch() {
@@ -97,18 +101,23 @@ function loadConfig(): Required<ConfigFile> {
 
 export const config = loadConfig()
 
-export function getStep(stepName: string) {
+export function getStep({ stepName }: { stepName: string }) {
   return config.steps[stepName] ?? log.fail(`No step called '${stepName}'`)
 }
 
-export function getStepKey(stepName: string) {
-  const step = getStep(stepName)
-  return slugify(stepName) + '-' + hashString(stringify(step))
+export function getStepKey({ stepName }: { stepName: string }) {
+  const step = getStep({ stepName })
+  const slug = slugify(stepName)
+  const stepHash = hashString(stableStringify(step))
+  return [slug, config.cacheVersion, stepHash].join('-')
 }
 
-export function getManifestPath(
-  stepName: string,
+export function getManifestPath({
+  stepName,
+  currentOrPrevious,
+}: {
+  stepName: string
   currentOrPrevious: 'current' | 'previous'
-) {
+}) {
   return path.join(config.manifestDir, currentOrPrevious, slugify(stepName))
 }

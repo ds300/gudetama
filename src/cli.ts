@@ -43,7 +43,7 @@ async function run([command, stepName]: string[]) {
     case 'run-if-needed':
       const done = log.timedTask(`Run '${stepName}' if needed`)
       log.step('Writing manifest file')
-      const currentManifestPath = getManifestPath(stepName, 'current')
+      const currentManifestPath = getManifestPath({ stepName, currentOrPrevious: 'current' })
       writeManifest({
         files: getManifestFiles(stepName),
         outputPath: currentManifestPath,
@@ -100,7 +100,7 @@ async function run([command, stepName]: string[]) {
     case 'write-manifest':
       writeManifest({
         files: getManifestFiles(stepName),
-        outputPath: getManifestPath(stepName, 'current'),
+        outputPath: getManifestPath({ stepName, currentOrPrevious: 'current' }),
       })
       break
     case 'help':

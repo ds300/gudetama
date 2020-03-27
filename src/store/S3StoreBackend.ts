@@ -2,6 +2,9 @@ import fs from 'fs'
 import https from 'https'
 import crypto from 'crypto'
 import { GudetamaStoreBackend } from './GudetamaStore'
+import { hashFile, hashString } from '../manifest/hash'
+import chalk from 'chalk'
+import { log } from '../log'
 
 export interface S3Config {
   accessKeyId: string
@@ -11,7 +14,11 @@ export interface S3Config {
 }
 
 export class S3StoreBackend implements GudetamaStoreBackend {
-  constructor(public config: S3Config = defaultConfig) {}
+  constructor(public config: S3Config = defaultConfig) {
+    if (Object.values(config).some((x) => !x)) {
+      log.fail('S3 config vars not found')
+    }
+  }
   async getObject(key: string, filePath: string) {
     return s3Download({
       objectKey: key,
@@ -34,9 +41,6 @@ const defaultConfig: S3Config = {
   bucket: process.env.GUDETAMA_S3_BUCKET_NAME || '',
   region: process.env.GUDETAMA_S3_REGION || 'us-east-1',
 }
-
-import { hashFile, hashString } from '../manifest/hash'
-import chalk from 'chalk'
 
 function hmac(key: string, string: string, encoding?: 'hex') {
   return crypto

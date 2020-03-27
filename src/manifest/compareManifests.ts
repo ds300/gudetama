@@ -5,11 +5,11 @@ import chalk from 'chalk'
 export function compareManifests(stepName: string) {
   const changes = []
   const previousLines = fs
-    .readFileSync(getManifestPath(stepName, 'previous'))
+    .readFileSync(getManifestPath({ stepName, currentOrPrevious: 'previous' }))
     .toString()
     .split('\n')
   const currentLines = fs
-    .readFileSync(getManifestPath(stepName, 'current'))
+    .readFileSync(getManifestPath({ stepName, currentOrPrevious: 'current' }))
     .toString()
     .split('\n')
 

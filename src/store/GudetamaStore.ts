@@ -6,6 +6,8 @@ import { S3StoreBackend } from './S3StoreBackend'
 import { time } from '../time'
 import { log } from '../log'
 import prettyBytes from 'pretty-bytes'
+import { getStepKey, getStep, config, getManifestPath } from '../config'
+import { hashFile } from '../manifest/hash'
 
 export interface GudetamaStoreBackend {
   getObject(key: string, path: string): Promise<boolean>
@@ -57,13 +59,11 @@ export class GudetamaStore {
     size,
     stepKey,
     objectKey,
-    currentBranch,
     archiveType,
   }: {
     size: number
     stepKey: string
     objectKey: string
-    currentBranch: string
     archiveType: ArchiveType
   }) {
     await this.updateIndex(stepKey, (index) => {
@@ -72,7 +72,7 @@ export class GudetamaStore {
         index.objects.splice(existing, 1)
       }
       index.objects.push({
-        branch: currentBranch,
+        branch: config.ci.currentBranch,
         type: archiveType,
         creationDate: new Date().toISOString(),
         key: objectKey,
@@ -81,23 +81,73 @@ export class GudetamaStore {
     })
   }
 
-  async save({
+  async save({ stepName }: { stepName: string }) {
+    log.step(`Saving data for step '${stepName}'`)
+    const currentManifestHash = hashFile(
+      getManifestPath({ stepName, currentOrPrevious: 'current' })
+    )
+    const stepKey = getStepKey({ stepName })
+    const step = getStep({ stepName })
+    
+    const persistentCachePaths: string[] = []
+    const cachePaths: string[] = []
+    const artifactPaths: string[] = []
+
+    step.artifacts?.forEach((path) => {
+      if (step.caches?.includes(path)) {
+        persistentCachePaths.push(path)
+      } else {
+        artifactPaths.push(path)
+      }
+    })
+
+    step.caches?.forEach((path) => {
+      if (!persistentCachePaths.includes(path)) {
+        cachePaths.push(path)
+      }
+    })
+
+    if (persistentCachePaths.length) {
+      this.persistArchive({
+        paths: persistentCachePaths,
+        stepKey,
+        archiveType: 'persistent_cache',
+        currentManifestHash,
+      })
+    }
+    if (cachePaths.length) {
+      this.persistArchive({
+        paths: cachePaths,
+        stepKey,
+        archiveType: 'cache',
+        currentManifestHash,
+      })
+    }
+    if (artifactPaths.length) {
+      this.persistArchive({
+        paths: artifactPaths,
+        stepKey,
+        archiveType: 'artifact',
+        currentManifestHash,
+      })
+    }
+  }
+
+  private async persistArchive({
     stepKey,
     paths,
     currentManifestHash,
-    currentBranch,
     archiveType,
   }: {
     stepKey: string
     archiveType: ArchiveType
     currentManifestHash: string
-    currentBranch: string
     paths: string[]
   }) {
     const objectKey = `${stepKey}-${archiveType}-${
       // caches do not need exact matching (in fact it balloons cache size)
       // so we only store them by branch
-      archiveType === 'cache' ? currentBranch : currentManifestHash
+      archiveType === 'cache' ? config.ci.currentBranch : currentManifestHash
     }`
     const tarballPath = path.join(this.tmpdir, objectKey)
 
@@ -108,7 +158,7 @@ export class GudetamaStore {
     const size = fs.statSync(tarballPath).size
 
     await log.timedSubstep(`Uploading archive (${prettyBytes(size)})`, () =>
-      this.cache.putObject(stepKey, tarballPath)
+      this.cache.putObject(objectKey, tarballPath)
     )
 
     await log.timedSubstep(`Updating index`, () =>
@@ -116,7 +166,6 @@ export class GudetamaStore {
         stepKey,
         archiveType,
         size,
-        currentBranch,
         objectKey,
       })
     )

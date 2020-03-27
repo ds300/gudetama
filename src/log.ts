@@ -8,13 +8,13 @@ function timedSubstep(str: string): () => void
 function timedSubstep<T>(str: string, task: () => T | Promise<T>): Promise<T>
 function timedSubstep() {
   const [str, task] = arguments
-  process.stdout.write(chalk.grey(str + '...'))
+  process.stdout.write(chalk.grey('  ' + str + '...'))
   const start = Date.now()
   const done = () => {
     process.stdout.write(chalk.cyan(' ' + timeSince(start) + '\n'))
   }
   if (task) {
-    return task().then((result: any) => {
+    return Promise.resolve(task()).then((result: any) => {
       done()
       return result
     })
