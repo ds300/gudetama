@@ -209,7 +209,7 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
   return new Promise<boolean>((resolve, reject) => {
     req.on('response', (res) => {
-      const fh = fs.openSync(filePath, 'a')
+      const fh = fs.openSync(filePath, 'w')
       let totalBytesWritten = 0
       res.on('data', function (d) {
         fs.writeSync(fh, d, totalBytesWritten)

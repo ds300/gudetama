@@ -6,7 +6,12 @@ import { S3StoreBackend } from './S3StoreBackend'
 import { time } from '../time'
 import { log } from '../log'
 import prettyBytes from 'pretty-bytes'
-import { getStepKey, getStep, config, getManifestPath } from '../config'
+import {
+  getStepKey,
+  config,
+  getManifestPath,
+  getArchivePaths,
+} from '../config'
 import { hashFile } from '../manifest/hash'
 
 export interface GudetamaStoreBackend {
@@ -14,7 +19,7 @@ export interface GudetamaStoreBackend {
   putObject(key: string, path: string): Promise<void>
 }
 
-type ArchiveType = 'cache' | 'persistent_cache' | 'artifact'
+type ArchiveType = 'cache' | 'persistent_cache' | 'artifact' | 'manifest'
 
 interface StepIndex {
   objects: Array<{
@@ -37,10 +42,7 @@ export class GudetamaStore {
     })
   }
 
-  private async updateIndex(
-    stepKey: string,
-    updater: (index: StepIndex) => StepIndex | void
-  ) {
+  private async getIndex({ stepKey }: { stepKey: string }): Promise<StepIndex> {
     const indexKey = `${stepKey}-index.json`
     const indexPath = path.join(this.tmpdir, indexKey)
     let index: StepIndex = {
@@ -48,11 +50,38 @@ export class GudetamaStore {
     }
     if (await this.cache.getObject(indexKey, indexPath)) {
       // TODO: io-ts
-      index = JSON.parse(fs.readFileSync(indexPath).toString())
+      try {
+        index = JSON.parse(fs.readFileSync(indexPath).toString())
+      } catch (e) {
+        console.log(fs.readFileSync(indexPath).toString())
+        log.fail('could not process index json')
+      }
     }
-    const result = updater(index) || index
-    fs.writeFileSync(indexPath, JSON.stringify(result))
+    return index
+  }
+
+  private async saveIndex({
+    stepKey,
+    index,
+  }: {
+    stepKey: string
+    index: StepIndex
+  }) {
+    const indexKey = `${stepKey}-index.json`
+    const indexPath = path.join(this.tmpdir, indexKey)
+    fs.writeFileSync(indexPath, JSON.stringify(index))
     await this.cache.putObject(indexKey, indexPath)
+  }
+
+  private async updateIndex({
+    stepKey,
+    updater,
+  }: {
+    stepKey: string
+    updater: (index: StepIndex) => StepIndex | void
+  }) {
+    const index = await this.getIndex({ stepKey })
+    await this.saveIndex({ stepKey, index: updater(index) || index })
   }
 
   private async addToIndex({
@@ -66,49 +95,41 @@ export class GudetamaStore {
     objectKey: string
     archiveType: ArchiveType
   }) {
-    await this.updateIndex(stepKey, (index) => {
-      const existing = index.objects.findIndex((obj) => obj.key === objectKey)
-      if (existing > -1) {
-        index.objects.splice(existing, 1)
-      }
-      index.objects.push({
-        branch: config.ci.currentBranch,
-        type: archiveType,
-        creationDate: new Date().toISOString(),
-        key: objectKey,
-        size,
-      })
+    await this.updateIndex({
+      stepKey,
+      updater: (index) => {
+        const existing = index.objects.findIndex((obj) => obj.key === objectKey)
+        if (existing > -1) {
+          index.objects.splice(existing, 1)
+        }
+        index.objects.push({
+          branch: config.ci.currentBranch,
+          type: archiveType,
+          creationDate: new Date().toISOString(),
+          key: objectKey,
+          size,
+        })
+      },
     })
   }
 
   async save({ stepName }: { stepName: string }) {
     log.step(`Saving data for step '${stepName}'`)
-    const currentManifestHash = hashFile(
-      getManifestPath({ stepName, currentOrPrevious: 'current' })
-    )
+    const currentManifestPath = getManifestPath({
+      stepName,
+      currentOrPrevious: 'current',
+    })
+    const currentManifestHash = hashFile(currentManifestPath)
     const stepKey = getStepKey({ stepName })
-    const step = getStep({ stepName })
-    
-    const persistentCachePaths: string[] = []
-    const cachePaths: string[] = []
-    const artifactPaths: string[] = []
 
-    step.artifacts?.forEach((path) => {
-      if (step.caches?.includes(path)) {
-        persistentCachePaths.push(path)
-      } else {
-        artifactPaths.push(path)
-      }
-    })
-
-    step.caches?.forEach((path) => {
-      if (!persistentCachePaths.includes(path)) {
-        cachePaths.push(path)
-      }
-    })
+    const {
+      persistentCachePaths,
+      cachePaths,
+      artifactPaths,
+    } = getArchivePaths({ stepName })
 
     if (persistentCachePaths.length) {
-      this.persistArchive({
+      await this.persistArchive({
         paths: persistentCachePaths,
         stepKey,
         archiveType: 'persistent_cache',
@@ -116,7 +137,7 @@ export class GudetamaStore {
       })
     }
     if (cachePaths.length) {
-      this.persistArchive({
+      await this.persistArchive({
         paths: cachePaths,
         stepKey,
         archiveType: 'cache',
@@ -124,13 +145,24 @@ export class GudetamaStore {
       })
     }
     if (artifactPaths.length) {
-      this.persistArchive({
+      await this.persistArchive({
         paths: artifactPaths,
         stepKey,
         archiveType: 'artifact',
         currentManifestHash,
       })
     }
+
+    await log.timedSubstep('Persisting manifest', async () => {
+      const objectKey = `${stepKey}-manifest-${currentManifestHash}`
+      await this.cache.putObject(objectKey, currentManifestPath)
+      await this.addToIndex({
+        size: fs.statSync(currentManifestPath).size,
+        archiveType: 'manifest',
+        objectKey,
+        stepKey,
+      })
+    })
   }
 
   private async persistArchive({
@@ -161,18 +193,117 @@ export class GudetamaStore {
       this.cache.putObject(objectKey, tarballPath)
     )
 
-    await log.timedSubstep(`Updating index`, () =>
-      this.addToIndex({
-        stepKey,
-        archiveType,
-        size,
-        objectKey,
-      })
+    await log.timedSubstep(
+      `Updating index`,
+      async () =>
+        await this.addToIndex({
+          stepKey,
+          archiveType,
+          size,
+          objectKey,
+        })
     )
   }
 
-  async restore(key: string) {
-    const tarballPath = path.join(this.tmpdir, key)
+  async restoreManifest({ stepName }: { stepName: string }) {
+    log.step('Attempting to restore manifest')
+    const index = await log.timedSubstep('Fetching index', () =>
+      this.getIndex({ stepKey: getStepKey({ stepName }) })
+    )
+  }
+
+  async restoreCaches({ stepName }: { stepName: string }) {
+    const { persistentCachePaths, cachePaths } = getArchivePaths({ stepName })
+    if (!persistentCachePaths.length && !cachePaths.length) {
+      return
+    }
+    log.step('Attempting to restore cache(s)')
+    const index = await log.timedSubstep('Fetching index', () =>
+      this.getIndex({ stepKey: getStepKey({ stepName }) })
+    )
+    index.objects.sort(objectComparator)
+
+    if (persistentCachePaths.length) {
+      for (const match of [
+        index.objects.find(
+          (o) =>
+            o.type === 'persistent_cache' &&
+            o.branch === config.ci.currentBranch
+        ),
+        index.objects.find(
+          (o) =>
+            o.type === 'persistent_cache' &&
+            o.branch === config.ci.primaryBranch
+        ),
+      ]) {
+        if (
+          match &&
+          (await log.timedSubstep(
+            `Attempting to download cache of [${persistentCachePaths.join(
+              ', '
+            )}] from previous build on ${match.branch} (${prettyBytes(
+              match.size
+            )})`,
+            () =>
+              this.cache.getObject(match.key, path.join(this.tmpdir, match.key))
+          ))
+        ) {
+          log.timedSubstep(`Success! Unarchiving`, () => {
+            exec('tar', [
+              'xf',
+              path.join(this.tmpdir, match.key),
+              '-C',
+              process.cwd(),
+            ])
+          })
+          break
+        }
+      }
+    }
+
+    if (cachePaths.length) {
+      for (const match of [
+        index.objects.find(
+          (o) => o.type === 'cache' && o.branch === config.ci.currentBranch
+        ),
+        index.objects.find(
+          (o) => o.type === 'cache' && o.branch === config.ci.primaryBranch
+        ),
+      ]) {
+        if (
+          match &&
+          (await log.timedSubstep(
+            `Attempting to download cache of [${cachePaths.join(
+              ', '
+            )}] from previous build on ${match.branch} (${prettyBytes(
+              match.size
+            )})`,
+            () =>
+              this.cache.getObject(match.key, path.join(this.tmpdir, match.key))
+          ))
+        ) {
+          log.timedSubstep(`Success! Unarchiving`, () => {
+            exec('tar', [
+              'xf',
+              path.join(this.tmpdir, match.key),
+              '-C',
+              process.cwd(),
+            ])
+          })
+          break
+        }
+      }
+    }
+  }
+
+  async restoreArtifacts({ stepName }: { stepName: string }) {
+    const { persistentCachePaths, artifactPaths } = getArchivePaths({
+      stepName,
+    })
+    const index = this.getIndex({ stepKey: getStepKey({ stepName }) })
+    const currentManifestHash = hashFile(
+      getManifestPath({ stepName, currentOrPrevious: 'current' })
+    )
     if (
       await time('Downloading archive', () =>
         this.cache.getObject(key, tarballPath)
@@ -195,4 +326,11 @@ function exec(command: string, args: string[]) {
       detail: result.stderr.toString(),
     })
   }
+}
+
+function objectComparator(
+  a: StepIndex['objects'][0],
+  b: StepIndex['objects'][0]
+) {
+  return new Date(a.creationDate).valueOf() - new Date(b.creationDate).valueOf()
 }

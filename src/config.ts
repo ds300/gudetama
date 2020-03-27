@@ -105,6 +105,30 @@ export function getStep({ stepName }: { stepName: string }) {
   return config.steps[stepName] ?? log.fail(`No step called '${stepName}'`)
 }
 
+export function getArchivePaths({ stepName }: { stepName: string }) {
+  const step = getStep({ stepName })
+
+  const persistentCachePaths: string[] = []
+  const cachePaths: string[] = []
+  const artifactPaths: string[] = []
+
+  step.artifacts?.forEach((path) => {
+    if (step.caches?.includes(path)) {
+      persistentCachePaths.push(path)
+    } else {
+      artifactPaths.push(path)
+    }
+  })
+
+  step.caches?.forEach((path) => {
+    if (!persistentCachePaths.includes(path)) {
+      cachePaths.push(path)
+    }
+  })
+
+  return { persistentCachePaths, cachePaths, artifactPaths }
+}
+
 export function getStepKey({ stepName }: { stepName: string }) {
   const step = getStep({ stepName })
   const slug = slugify(stepName)

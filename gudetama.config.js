@@ -7,7 +7,7 @@ const config = {
       inputFiles: {
         include: ['yarn.lock'],
       },
-      artifacts: ['node_modules'],
+      artifacts: ['node_modules/chalk'],
     },
     'yarn test': {
       inputFiles: {
