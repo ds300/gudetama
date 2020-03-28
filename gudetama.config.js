@@ -12,7 +12,14 @@ const config = {
     'yarn test': {
       inputFiles: {
         include: ['lib/**/*'],
-      }
+      },
+    },
+    test: {
+      command: 'mkdir -p .test && echo banana > .test/banana ',
+      inputFiles: {
+        include: ['package.json'],
+      },
+      artifacts: ['.test'],
     },
   },
 }

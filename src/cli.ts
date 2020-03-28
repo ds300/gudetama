@@ -1,14 +1,12 @@
 import { compareManifests } from './manifest/compareManifests'
 import { writeManifest } from './manifest/writeManifest'
-import { restorePreviousManifest } from './manifest/restorePreviousManifest'
 import { getManifestPath, getStep } from './config'
-import { restoreArtifacts } from './restoreArtifacts'
 import { runCommand } from './runCommand'
 import chalk from 'chalk'
 import { getManifestFiles } from './manifest/getManifestFiles'
 import { log } from './log'
 import { hashFile } from './manifest/hash'
-import { restoreCaches } from './restoreCaches'
+import { store } from './store/store'
 
 function required(name: string) {
   return chalk.gray('<') + name + chalk.gray('>')
@@ -37,71 +35,42 @@ COMMANDS
 const { version } = require('../package.json')
 
 async function run([command, stepName]: string[]) {
-  console.log(`${chalk.bold('gudetama')} ${version}\n`)
+  console.log(`${chalk.bold('gudetama')} ${version}`)
 
   switch (command) {
     case 'run-if-needed':
       const done = log.timedTask(`Run '${stepName}' if needed`)
-      log.step('Writing manifest file')
-      const currentManifestPath = getManifestPath({ stepName, currentOrPrevious: 'current' })
-      writeManifest({
-        files: getManifestFiles(stepName),
-        outputPath: currentManifestPath,
-      })
-      log.substep(`Output to ${currentManifestPath}`)
-
-      const currentManifestHash = hashFile(currentManifestPath)
-
-      log.step('Attempting to restore previous manifest file')
-      const result = await restorePreviousManifest({
+      const currentManifestPath = getManifestPath({
         stepName,
-        currentManifestHash,
+        currentOrPrevious: 'current',
       })
+      log.step(`Writing manifest file to ${currentManifestPath}`)
+      await writeManifest({ stepName })
+
+      const result = await store.restoreManifest({ stepName })
+
       switch (result) {
         case 'exact':
-          log.step('No need to run, skipping step.')
-          log.step('Restoring artifacts')
-          await restoreArtifacts(stepName)
+          if (!(await store.restoreArtifacts({ stepName }))) {
+            await runCommand({ stepName })
+          }
           break
         case 'partial':
           const diff = compareManifests(stepName)
           if (diff.length) {
             log.step('These files changed:')
             diff.map(log.substep)
-            if (getStep(stepName).caches?.length) {
-              log.step('Restoring caches')
-              await restoreCaches({
-                stepName,
-                currentManifestHash,
-              })
-            }
-            runCommand(stepName)
+            await runCommand({ stepName })
           }
           break
-        case null:
-          runCommand(stepName)
+        case 'none':
+          await runCommand({ stepName })
           break
       }
-      if (previous) {
-        if (diff.length === 0) {
-          console.log('No changes. Not running.')
-          await restoreArtifacts({ config, stepName })
-          return
-        } else {
-          console.log(`\n${diff.join('\n')}\n`)
-          console.log(`There were ${diff.length} changes.`)
-          runCommand({ config, stepName })
-        }
-      } else {
-      }
-
+      done('Finished')
       break
-
     case 'write-manifest':
-      writeManifest({
-        files: getManifestFiles(stepName),
-        outputPath: getManifestPath({ stepName, currentOrPrevious: 'current' }),
-      })
+      writeManifest({ stepName })
       break
     case 'help':
     case '--help':

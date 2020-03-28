@@ -3,7 +3,6 @@ import path from 'path'
 import rimraf from 'rimraf'
 import { spawnSync } from 'child_process'
 import { S3StoreBackend } from './S3StoreBackend'
-import { time } from '../time'
 import { log } from '../log'
 import prettyBytes from 'pretty-bytes'
 import { getStepKey, config, getManifestPath, getArchivePaths } from '../config'
@@ -174,7 +173,7 @@ export class GudetamaStore {
     currentManifestHash,
   }: {
     stepName: string
-    objectType: string
+    objectType: ObjectType
     currentManifestHash: string
   }) {
     return `${getStepKey({ stepName })}-${objectType}-${
@@ -247,7 +246,11 @@ export class GudetamaStore {
     })
   }
 
-  async restoreManifest({ stepName }: { stepName: string }) {
+  async restoreManifest({
+    stepName,
+  }: {
+    stepName: string
+  }): Promise<'exact' | 'partial' | 'none'> {
     log.step(`Attempting to restore manifest for step ${stepName}`)
     const currentManifestHash = hashFile(
       getManifestPath({
@@ -268,16 +271,12 @@ export class GudetamaStore {
       objectType: 'manifest',
     })
 
-    if (
-      await log.timedSubstep('Looking for exact match', () =>
-        this.cache.getObject(exactMatchObjectKey, previousManifestPath)
-      )
-    ) {
+    if (await this.cache.getObject(exactMatchObjectKey, previousManifestPath)) {
       log.substep(chalk.green('Found exact match!'))
-      return
+      return 'exact'
     }
 
-    await log.timedSubstep(
+    return await log.timedSubstep(
       'No exact match found. Looking for fallbacks',
       async () => {
         const index = await this.getIndex({ stepName })
@@ -299,9 +298,10 @@ export class GudetamaStore {
                 match.branch
               )}`
             )
-            break
+            return 'partial'
           }
         }
+        return 'none'
       }
     )
   }
@@ -312,9 +312,7 @@ export class GudetamaStore {
       return
     }
     log.step('Attempting to restore cache(s)')
-    const index = await log.timedSubstep('Fetching index', () =>
-      this.getIndex({ stepName })
-    )
+    const index = await this.getIndex({ stepName })
     index.objects.sort(objectComparator)
 
     if (persistentCachePaths.length) {
@@ -333,7 +331,7 @@ export class GudetamaStore {
         if (
           match &&
           (await log.timedSubstep(
-            `Attempting to download cache of [${persistentCachePaths.join(
+            `Attempting to fetch cache of [${persistentCachePaths.join(
               ', '
             )}] from previous build on ${chalk.bold(
               match.branch
@@ -367,7 +365,7 @@ export class GudetamaStore {
         if (
           match &&
           (await log.timedSubstep(
-            `Attempting to download cache of [${cachePaths.join(
+            `Attempting to fetch cache of [${cachePaths.join(
               ', '
             )}] from previous build on ${chalk.bold(
               match.branch
@@ -390,26 +388,67 @@ export class GudetamaStore {
     }
   }
 
-  async restoreArtifacts({ stepName }: { stepName: string }) {
+  async restoreArtifacts({ stepName }: { stepName: string }): Promise<boolean> {
+    log.step('Restoring artifacts')
     const { persistentCachePaths, artifactPaths } = getArchivePaths({
       stepName,
     })
-    const index = this.getIndex({ stepKey: getStepKey({ stepName }) })
+    const index = await this.getIndex({ stepName })
     const currentManifestHash = hashFile(
       getManifestPath({ stepName, currentOrPrevious: 'current' })
     )
-    if (
-      await time('Downloading archive', () =>
-        this.cache.getObject(key, tarballPath)
-      )
-    ) {
-      time('Unarchiving', () => {
-        exec('tar', ['xf', tarballPath, '-C', process.cwd()])
+    let success = true
+    if (persistentCachePaths.length) {
+      const objectKey = this.getObjectKey({
+        stepName,
+        currentManifestHash,
+        objectType: 'persistent_cache',
       })
-      return true
+      const tarballPath = path.join(this.tmpdir, objectKey)
+      const match = index.objects.find((o) => (o.key = objectKey))
+      const sizeString = match ? ` (${prettyBytes(match.size)})` : ''
+      if (
+        await log.timedSubstep(
+          `Fetching archive of [${persistentCachePaths.join(
+            ', '
+          )}]${sizeString}`,
+          () => this.cache.getObject(objectKey, tarballPath)
+        )
+      ) {
+        await log.timedSubstep('Unarchiving', () => {
+          exec('tar', ['xf', tarballPath, '-C', process.cwd()])
+        })
+      } else {
+        log.substep('Archive not found, perhaps it was pruned.')
+        success = false
+      }
     }
-    console.log('No match found')
-    return false
+
+    if (artifactPaths.length) {
+      const objectKey = this.getObjectKey({
+        stepName,
+        currentManifestHash,
+        objectType: 'artifact',
+      })
+      const tarballPath = path.join(this.tmpdir, objectKey)
+      const match = index.objects.find((o) => (o.key = objectKey))
+      const sizeString = match ? ` (${prettyBytes(match.size)})` : ''
+      if (
+        await log.timedSubstep(
+          `Fetching archive of [${artifactPaths.join(', ')}]${sizeString}`,
+          () => this.cache.getObject(objectKey, tarballPath)
+        )
+      ) {
+        await log.timedSubstep('Unarchiving', () => {
+          exec('tar', ['xf', tarballPath, '-C', process.cwd()])
+        })
+      } else {
+        log.substep('Archive not found, perhaps it was pruned.')
+        success = false
+      }
+    }
+
+    return success
   }
 }
 

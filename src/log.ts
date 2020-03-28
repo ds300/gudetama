@@ -16,10 +16,16 @@ function timedSubstep() {
     release()
   }
   if (task) {
-    return Promise.resolve(task()).then((result: any) => {
-      done()
-      return result
-    })
+    try {
+      return Promise.resolve(task())
+        .then((result: any) => {
+          done()
+          return result
+        })
+        .catch((error) => log.fail('Unexpected error', { error }))
+    } catch (error) {
+      log.fail('Unexpected error', { error })
+    }
   }
   return done
 }

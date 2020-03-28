@@ -1,20 +1,19 @@
 import { spawnSync } from 'child_process'
-import { getStep, getStepKey } from './config'
 import { store } from './store/store'
-import { restoreCaches } from './restoreCaches'
+import { getStep } from './config'
+import { log } from './log'
 
-function intersection(a: string[], b: string[]) {
-  const result = []
-  for (const e in a) {
-    if (b.includes(e)) {
-      result.push(e)
-    }
+export async function runCommand({ stepName }: { stepName: string }) {
+  await store.restoreCaches({ stepName })
+  const step = getStep({ stepName })
+  const command = step.command || stepName
+  log.step(`Running '${command}'`)
+  const result = spawnSync(command, { stdio: 'inherit', shell: true })
+  if (result.status != 0) {
+    log.fail(`Command '${command}' failed with exit code ${result.status}`, {
+      error: result.error,
+      detail: result.stderr?.toString?.(),
+    })
   }
-  return result
-}
-
-export function runCommand(stepName: string) {
-  const { artifacts, caches, command = stepName } = getStep(stepName)
-  const result = spawnSync(command)
-  if (result.status)
+  await store.save({ stepName })
 }
