@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs from 'fs-extra'
 import path from 'path'
 import rimraf from 'rimraf'
 import { spawnSync } from 'child_process'
@@ -6,27 +6,26 @@ import { S3StoreBackend } from './S3StoreBackend'
 import { time } from '../time'
 import { log } from '../log'
 import prettyBytes from 'pretty-bytes'
-import {
-  getStepKey,
-  config,
-  getManifestPath,
-  getArchivePaths,
-} from '../config'
+import { getStepKey, config, getManifestPath, getArchivePaths } from '../config'
 import { hashFile } from '../manifest/hash'
+import chalk from 'chalk'
+
+const INDEX_VERSION = 0
 
 export interface GudetamaStoreBackend {
   getObject(key: string, path: string): Promise<boolean>
   putObject(key: string, path: string): Promise<void>
 }
 
-type ArchiveType = 'cache' | 'persistent_cache' | 'artifact' | 'manifest'
+type ObjectType = 'cache' | 'persistent_cache' | 'artifact' | 'manifest'
 
 interface StepIndex {
+  version: number
   objects: Array<{
     key: string
     creationDate: string
     size: number
-    type: ArchiveType
+    type: ObjectType
     branch: string
   }>
 }
@@ -42,61 +41,70 @@ export class GudetamaStore {
     })
   }
 
-  private async getIndex({ stepKey }: { stepKey: string }): Promise<StepIndex> {
-    const indexKey = `${stepKey}-index.json`
+  private async getIndex({
+    stepName,
+  }: {
+    stepName: string
+  }): Promise<StepIndex> {
+    const indexKey = `${getStepKey({ stepName })}-index.json`
     const indexPath = path.join(this.tmpdir, indexKey)
     let index: StepIndex = {
+      version: INDEX_VERSION,
       objects: [],
     }
     if (await this.cache.getObject(indexKey, indexPath)) {
       // TODO: io-ts
       try {
-        index = JSON.parse(fs.readFileSync(indexPath).toString())
+        const result = JSON.parse(fs.readFileSync(indexPath).toString())
+        if (result.version !== INDEX_VERSION) {
+          log.substep('Index version changed, starting from scratch...')
+        } else {
+          index = result
+        }
       } catch (e) {
-        console.log(fs.readFileSync(indexPath).toString())
-        log.fail('could not process index json')
+        log.substep('Could not process index json, starting from scratch...')
       }
     }
     return index
   }
 
   private async saveIndex({
-    stepKey,
+    stepName,
     index,
   }: {
-    stepKey: string
+    stepName: string
     index: StepIndex
   }) {
-    const indexKey = `${stepKey}-index.json`
+    const indexKey = `${getStepKey({ stepName })}-index.json`
     const indexPath = path.join(this.tmpdir, indexKey)
     fs.writeFileSync(indexPath, JSON.stringify(index))
     await this.cache.putObject(indexKey, indexPath)
   }
 
   private async updateIndex({
-    stepKey,
+    stepName,
     updater,
   }: {
-    stepKey: string
+    stepName: string
     updater: (index: StepIndex) => StepIndex | void
   }) {
-    const index = await this.getIndex({ stepKey })
-    await this.saveIndex({ stepKey, index: updater(index) || index })
+    const index = await this.getIndex({ stepName })
+    await this.saveIndex({ stepName, index: updater(index) || index })
   }
 
   private async addToIndex({
     size,
-    stepKey,
+    stepName,
     objectKey,
-    archiveType,
+    objectType,
   }: {
     size: number
-    stepKey: string
+    stepName: string
     objectKey: string
-    archiveType: ArchiveType
+    objectType: ObjectType
   }) {
     await this.updateIndex({
-      stepKey,
+      stepName,
       updater: (index) => {
         const existing = index.objects.findIndex((obj) => obj.key === objectKey)
         if (existing > -1) {
@@ -104,7 +112,7 @@ export class GudetamaStore {
         }
         index.objects.push({
           branch: config.ci.currentBranch,
-          type: archiveType,
+          type: objectType,
           creationDate: new Date().toISOString(),
           key: objectKey,
           size,
@@ -120,7 +128,6 @@ export class GudetamaStore {
       currentOrPrevious: 'current',
     })
     const currentManifestHash = hashFile(currentManifestPath)
-    const stepKey = getStepKey({ stepName })
 
     const {
       persistentCachePaths,
@@ -131,84 +138,171 @@ export class GudetamaStore {
     if (persistentCachePaths.length) {
       await this.persistArchive({
         paths: persistentCachePaths,
-        stepKey,
-        archiveType: 'persistent_cache',
+        stepName,
+        objectType: 'persistent_cache',
         currentManifestHash,
       })
     }
     if (cachePaths.length) {
       await this.persistArchive({
         paths: cachePaths,
-        stepKey,
-        archiveType: 'cache',
+        stepName,
+        objectType: 'cache',
         currentManifestHash,
       })
     }
     if (artifactPaths.length) {
       await this.persistArchive({
         paths: artifactPaths,
-        stepKey,
-        archiveType: 'artifact',
+        stepName,
+        objectType: 'artifact',
         currentManifestHash,
       })
     }
 
-    await log.timedSubstep('Persisting manifest', async () => {
-      const objectKey = `${stepKey}-manifest-${currentManifestHash}`
-      await this.cache.putObject(objectKey, currentManifestPath)
-      await this.addToIndex({
-        size: fs.statSync(currentManifestPath).size,
-        archiveType: 'manifest',
-        objectKey,
-        stepKey,
-      })
+    await this.persistObject({
+      stepName,
+      objectType: 'manifest',
+      filePath: currentManifestPath,
+      currentManifestHash,
     })
   }
 
+  private getObjectKey({
+    stepName,
+    objectType,
+    currentManifestHash,
+  }: {
+    stepName: string
+    objectType: string
+    currentManifestHash: string
+  }) {
+    return `${getStepKey({ stepName })}-${objectType}-${
+      // caches do not need exact matching (in fact it balloons cache size)
+      // so we only store them by branch
+      objectType === 'cache' ? config.ci.currentBranch : currentManifestHash
+    }`
+  }
+
+  private async persistObject({
+    stepName,
+    objectType,
+    filePath,
+    currentManifestHash,
+  }: {
+    stepName: string
+    objectType: ObjectType
+    filePath: string
+    currentManifestHash: string
+  }) {
+    const size = fs.statSync(filePath).size
+    const objectKey = this.getObjectKey({
+      stepName,
+      objectType,
+      currentManifestHash,
+    })
+
+    await log.timedSubstep(
+      `Uploading ${objectType} (${prettyBytes(size)})`,
+      () => this.cache.putObject(objectKey, filePath)
+    )
+
+    await log.timedSubstep(`Updating index`, async () =>
+      this.addToIndex({
+        stepName,
+        objectType,
+        size,
+        objectKey,
+      })
+    )
+  }
+
   private async persistArchive({
-    stepKey,
+    stepName,
     paths,
     currentManifestHash,
-    archiveType,
+    objectType,
   }: {
-    stepKey: string
-    archiveType: ArchiveType
+    stepName: string
+    objectType: ObjectType
     currentManifestHash: string
     paths: string[]
   }) {
-    const objectKey = `${stepKey}-${archiveType}-${
-      // caches do not need exact matching (in fact it balloons cache size)
-      // so we only store them by branch
-      archiveType === 'cache' ? config.ci.currentBranch : currentManifestHash
-    }`
+    const objectKey = this.getObjectKey({
+      stepName,
+      currentManifestHash,
+      objectType,
+    })
     const tarballPath = path.join(this.tmpdir, objectKey)
 
     await log.timedSubstep(`Creating archive of [${paths.join(', ')}]`, () => {
       exec('tar', ['cf', tarballPath, ...paths])
     })
 
-    const size = fs.statSync(tarballPath).size
-
-    await log.timedSubstep(`Uploading archive (${prettyBytes(size)})`, () =>
-      this.cache.putObject(objectKey, tarballPath)
-    )
-
-    await log.timedSubstep(
-      `Updating index`,
-      async () =>
-        await this.addToIndex({
-          stepKey,
-          archiveType,
-          size,
-          objectKey,
-        })
-    )
+    await this.persistObject({
+      stepName,
+      objectType,
+      filePath: tarballPath,
+      currentManifestHash,
+    })
   }
 
   async restoreManifest({ stepName }: { stepName: string }) {
-    log.step('Attempting to restore manifest')
-    const index = await log.timedSubstep('Fetching index', () =>
-      this.getIndex({ stepKey: getStepKey({ stepName }) })
+    log.step(`Attempting to restore manifest for step ${stepName}`)
+    const currentManifestHash = hashFile(
+      getManifestPath({
+        stepName,
+        currentOrPrevious: 'current',
+      })
+    )
+    const previousManifestPath = getManifestPath({
+      stepName,
+      currentOrPrevious: 'previous',
+    })
+    if (!fs.existsSync(path.dirname(previousManifestPath))) {
+      fs.mkdirpSync(path.dirname(previousManifestPath))
+    }
+    const exactMatchObjectKey = this.getObjectKey({
+      stepName,
+      currentManifestHash,
+      objectType: 'manifest',
+    })
+
+    if (
+      await log.timedSubstep('Looking for exact match', () =>
+        this.cache.getObject(exactMatchObjectKey, previousManifestPath)
+      )
+    ) {
+      log.substep(chalk.green('Found exact match!'))
+      return
+    }
+
+    await log.timedSubstep(
+      'No exact match found. Looking for fallbacks',
+      async () => {
+        const index = await this.getIndex({ stepName })
+        index.objects.sort(objectComparator)
+        for (const match of [
+          index.objects.find(
+            (o) => o.type === 'manifest' && o.branch === config.ci.currentBranch
+          ),
+          index.objects.find(
+            (o) => o.type === 'manifest' && o.branch === config.ci.primaryBranch
+          ),
+        ]) {
+          if (
+            match &&
+            (await this.cache.getObject(match.key, previousManifestPath))
+          ) {
+            log.substep(
+              `Found a manifest from a previous successful build on ${chalk.bold(
+                match.branch
+              )}`
+            )
+            break
+          }
+        }
+      }
     )
   }
 
@@ -219,7 +313,7 @@ export class GudetamaStore {
     }
     log.step('Attempting to restore cache(s)')
     const index = await log.timedSubstep('Fetching index', () =>
-      this.getIndex({ stepKey: getStepKey({ stepName }) })
+      this.getIndex({ stepName })
     )
     index.objects.sort(objectComparator)
 
@@ -241,9 +335,9 @@ export class GudetamaStore {
           (await log.timedSubstep(
             `Attempting to download cache of [${persistentCachePaths.join(
               ', '
-            )}] from previous build on ${match.branch} (${prettyBytes(
-              match.size
-            )})`,
+            )}] from previous build on ${chalk.bold(
+              match.branch
+            )} (${prettyBytes(match.size)})`,
             () =>
               this.cache.getObject(match.key, path.join(this.tmpdir, match.key))
           ))
@@ -275,9 +369,9 @@ export class GudetamaStore {
           (await log.timedSubstep(
             `Attempting to download cache of [${cachePaths.join(
               ', '
-            )}] from previous build on ${match.branch} (${prettyBytes(
-              match.size
-            )})`,
+            )}] from previous build on ${chalk.bold(
+              match.branch
+            )} (${prettyBytes(match.size)})`,
             () =>
               this.cache.getObject(match.key, path.join(this.tmpdir, match.key))
           ))
