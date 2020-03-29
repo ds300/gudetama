@@ -26,6 +26,7 @@ interface StepIndex {
     size: number
     type: ObjectType
     branch: string
+    commit: string
   }>
 }
 
@@ -80,30 +81,37 @@ export class GudetamaStore {
     await this.cache.putObject(indexKey, indexPath)
   }
 
-  private async updateIndex({
-    stepName,
+  updateQueue: Array<(index: StepIndex) => StepIndex | void> = []
+
+  private updateIndex({
     updater,
   }: {
-    stepName: string
     updater: (index: StepIndex) => StepIndex | void
   }) {
-    const index = await this.getIndex({ stepName })
-    await this.saveIndex({ stepName, index: updater(index) || index })
+    this.updateQueue.push(updater)
   }
 
-  private async addToIndex({
+  private async commitIndexUpdates({ stepName }: { stepName: string }) {
+    let index = await this.getIndex({ stepName })
+    while (this.updateQueue.length) {
+      index = this.updateQueue.shift()?.(index) || index
+    }
+    // TODO: prune index
+    await log.timedSubstep('Updating index', () =>
+      this.saveIndex({ stepName, index })
+    )
+  }
+
+  private addToIndex({
     size,
-    stepName,
     objectKey,
     objectType,
   }: {
     size: number
-    stepName: string
     objectKey: string
     objectType: ObjectType
   }) {
-    await this.updateIndex({
-      stepName,
+    this.updateIndex({
       updater: (index) => {
         const existing = index.objects.findIndex((obj) => obj.key === objectKey)
         if (existing > -1) {
@@ -115,17 +123,15 @@ export class GudetamaStore {
           creationDate: new Date().toISOString(),
           key: objectKey,
           size,
+          commit: exec('git', ['rev-parse', 'HEAD']).trim(),
         })
       },
     })
   }
 
   async save({ stepName }: { stepName: string }) {
-    log.step(`Saving data for step '${stepName}'`)
-    const currentManifestPath = getManifestPath({
-      stepName,
-      currentOrPrevious: 'current',
-    })
+    log.step(`Saving data`)
+    const currentManifestPath = getManifestPath({ stepName })
     const currentManifestHash = hashFile(currentManifestPath)
 
     const {
@@ -165,6 +171,8 @@ export class GudetamaStore {
       filePath: currentManifestPath,
       currentManifestHash,
     })
+
+    await this.commitIndexUpdates({ stepName })
   }
 
   private getObjectKey({
@@ -206,14 +214,11 @@ export class GudetamaStore {
       () => this.cache.putObject(objectKey, filePath)
     )
 
-    await log.timedSubstep(`Updating index`, async () =>
-      this.addToIndex({
-        stepName,
-        objectType,
-        size,
-        objectKey,
-      })
-    )
+    this.addToIndex({
+      objectType,
+      size,
+      objectKey,
+    })
   }
 
   private async persistArchive({
@@ -250,18 +255,19 @@ export class GudetamaStore {
     stepName,
   }: {
     stepName: string
-  }): Promise<'exact' | 'partial' | 'none'> {
-    log.step(`Attempting to restore manifest for step ${stepName}`)
-    const currentManifestHash = hashFile(
-      getManifestPath({
-        stepName,
-        currentOrPrevious: 'current',
-      })
+  }): Promise<
+    | {
+        type: 'exact'
+      }
+    | { type: 'partial'; previousManifestPath: string }
+    | { type: 'none' }
+  > {
+    log.step(`Attempting to restore manifest`)
+    const currentManifestHash = hashFile(getManifestPath({ stepName }))
+    const previousManifestPath = path.join(
+      this.tmpdir,
+      getStepKey({ stepName }) + '-previous_manifest'
     )
-    const previousManifestPath = getManifestPath({
-      stepName,
-      currentOrPrevious: 'previous',
-    })
     if (!fs.existsSync(path.dirname(previousManifestPath))) {
       fs.mkdirpSync(path.dirname(previousManifestPath))
     }
@@ -273,7 +279,7 @@ export class GudetamaStore {
 
     if (await this.cache.getObject(exactMatchObjectKey, previousManifestPath)) {
       log.substep(chalk.green('Found exact match!'))
-      return 'exact'
+      return { type: 'exact' }
     }
 
     return await log.timedSubstep(
@@ -298,10 +304,11 @@ export class GudetamaStore {
                 match.branch
               )}`
             )
-            return 'partial'
+            process.env.GUDETAMA_PREVIOUS_SUCCESS_COMMIT = match.commit
+            return { type: 'partial', previousManifestPath } as const
           }
         }
-        return 'none'
+        return { type: 'none' } as const
       }
     )
   }
@@ -394,9 +401,7 @@ export class GudetamaStore {
       stepName,
     })
     const index = await this.getIndex({ stepName })
-    const currentManifestHash = hashFile(
-      getManifestPath({ stepName, currentOrPrevious: 'current' })
-    )
+    const currentManifestHash = hashFile(getManifestPath({ stepName }))
     let success = true
     if (persistentCachePaths.length) {
       const objectKey = this.getObjectKey({
@@ -459,6 +464,7 @@ function exec(command: string, args: string[]) {
       detail: result.stderr.toString(),
     })
   }
+  return result.stdout.toString()
 }
 
 function objectComparator(

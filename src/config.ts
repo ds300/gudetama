@@ -136,12 +136,6 @@ export function getStepKey({ stepName }: { stepName: string }) {
   return [slug, config.cacheVersion, stepHash].join('-')
 }
 
-export function getManifestPath({
-  stepName,
-  currentOrPrevious,
-}: {
-  stepName: string
-  currentOrPrevious: 'current' | 'previous'
-}) {
-  return path.join(config.manifestDir, currentOrPrevious, slugify(stepName))
+export function getManifestPath({ stepName }: { stepName: string }) {
+  return path.join(config.manifestDir, slugify(stepName))
 }

@@ -2,14 +2,20 @@ import fs from 'fs'
 import { getManifestPath } from '../config'
 import chalk from 'chalk'
 
-export function compareManifests(stepName: string) {
+export function compareManifests({
+  stepName,
+  previousManifestPath,
+}: {
+  stepName: string
+  previousManifestPath: string
+}) {
   const changes = []
   const previousLines = fs
-    .readFileSync(getManifestPath({ stepName, currentOrPrevious: 'previous' }))
+    .readFileSync(previousManifestPath)
     .toString()
     .split('\n')
   const currentLines = fs
-    .readFileSync(getManifestPath({ stepName, currentOrPrevious: 'current' }))
+    .readFileSync(getManifestPath({ stepName }))
     .toString()
     .split('\n')
 

@@ -1,11 +1,9 @@
 import { compareManifests } from './manifest/compareManifests'
 import { writeManifest } from './manifest/writeManifest'
-import { getManifestPath, getStep } from './config'
+import { getManifestPath } from './config'
 import { runCommand } from './runCommand'
 import chalk from 'chalk'
-import { getManifestFiles } from './manifest/getManifestFiles'
 import { log } from './log'
-import { hashFile } from './manifest/hash'
 import { store } from './store/store'
 
 function required(name: string) {
@@ -39,24 +37,28 @@ async function run([command, stepName]: string[]) {
 
   switch (command) {
     case 'run-if-needed':
-      const done = log.timedTask(`Run '${stepName}' if needed`)
-      const currentManifestPath = getManifestPath({
-        stepName,
-        currentOrPrevious: 'current',
-      })
-      log.step(`Writing manifest file to ${currentManifestPath}`)
+      const done = log.timedTask(
+        `Run ${chalk.gray("'")}${stepName}${chalk.gray("'")} if needed`
+      )
+      const currentManifestPath = getManifestPath({ stepName })
+      log.step(
+        `Computing manifest file ${chalk.cyan.bold(currentManifestPath)}`
+      )
       await writeManifest({ stepName })
 
       const result = await store.restoreManifest({ stepName })
 
-      switch (result) {
+      switch (result.type) {
         case 'exact':
           if (!(await store.restoreArtifacts({ stepName }))) {
             await runCommand({ stepName })
           }
           break
         case 'partial':
-          const diff = compareManifests(stepName)
+          const diff = compareManifests({
+            stepName,
+            previousManifestPath: result.previousManifestPath,
+          })
           if (diff.length) {
             log.step('These files changed:')
             diff.map(log.substep)

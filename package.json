@@ -11,7 +11,6 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
-  
   "files": [
     "index.js",
     "bin/",

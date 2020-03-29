@@ -5,7 +5,7 @@ import { getManifestPath } from '../config'
 import { getManifestFiles } from './getManifestFiles'
 
 export async function writeManifest({ stepName }: { stepName: string }) {
-  const outputPath = getManifestPath({ stepName, currentOrPrevious: 'current' })
+  const outputPath = getManifestPath({ stepName })
   if (!fs.existsSync(path.dirname(outputPath))) {
     fs.mkdirpSync(path.dirname(outputPath))
   }
