@@ -1,6 +1,6 @@
 import { compareManifests } from './manifest/compareManifests'
 import { writeManifest } from './manifest/writeManifest'
-import { getManifestPath } from './config'
+import { getManifestPath, getStep, config } from './config'
 import { runCommand } from './runCommand'
 import chalk from 'chalk'
 import { log } from './log'
@@ -30,15 +30,47 @@ COMMANDS
 `)
 }
 
+const renderStepName = ({ stepName }: { stepName: string }) =>
+  `${chalk.gray("'")}${stepName}${chalk.gray("'")}`
+
 const { version } = require('../package.json')
 
 async function run([command, stepName]: string[]) {
+  if (command.match(/^(-v|--version)$/)) {
+    console.log(version)
+    process.exit()
+  }
   console.log(`${chalk.bold('gudetama')} ${version}`)
 
   switch (command) {
     case 'run-if-needed':
+      const step = getStep({ stepName })
+      if (
+        step.branches?.never?.includes(config.ci.currentBranch) ||
+        (step.branches?.only &&
+          !step.branches.only.includes(config.ci.currentBranch))
+      ) {
+        log.task(
+          `Skipping ${renderStepName({
+            stepName,
+          })} because this is the ${chalk.cyan(config.ci.currentBranch)} branch`
+        )
+        return
+      }
+
+      if (step.branches?.always?.includes(config.ci.currentBranch)) {
+        const done = log.timedTask(
+          `Running ${renderStepName({
+            stepName,
+          })} because this is the ${chalk.cyan(config.ci.currentBranch)} branch`
+        )
+        await runCommand({ stepName })
+        done('Finished')
+        return
+      }
+
       const done = log.timedTask(
-        `Run ${chalk.gray("'")}${stepName}${chalk.gray("'")} if needed`
+        `Run ${renderStepName({ stepName })} if needed`
       )
       const currentManifestPath = getManifestPath({ stepName })
       await log.timedStep(

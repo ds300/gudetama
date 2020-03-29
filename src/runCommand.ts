@@ -4,18 +4,12 @@ import { getStep } from './config'
 import { log } from './log'
 import chalk from 'chalk'
 
-const numColumns = Math.min(process.stdout.columns || 80, 80)
-const separator =
-  '\n' +
-  chalk.gray(new Array(Math.floor(numColumns / 2)).fill('∙').join(' ')) +
-  '\n'
-
 export async function runCommand({ stepName }: { stepName: string }) {
   await store.restoreCaches({ stepName })
   const step = getStep({ stepName })
   const command = step.command || stepName
-  log.step(`exec ${chalk.cyan.bold(command)}`)
-  console.log(separator)
+  log.step(chalk.greenBright.bold(command))
+  const start = Date.now()
   const result = spawnSync(command, { stdio: 'inherit', shell: true })
   if (result.status != 0) {
     log.fail(
@@ -27,6 +21,9 @@ export async function runCommand({ stepName }: { stepName: string }) {
       }
     )
   }
-  console.log(separator)
+  console.log(chalk.gray(`\n              ∙  ∙  ∙\n`))
+  log.step(
+    `Done in ${chalk.cyan(((Date.now() - start) / 1000).toFixed(2) + 's')}`
+  )
   await store.save({ stepName })
 }

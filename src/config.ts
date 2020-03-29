@@ -15,8 +15,8 @@ export interface InputFiles {
 }
 
 export interface Step {
-  inputFiles: InputFiles
-  inputCommands: string[]
+  inputFiles?: InputFiles
+  inputCommands?: string[]
   artifacts?: string[]
   caches?: string[]
   command?: string

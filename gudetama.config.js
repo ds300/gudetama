@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @type {import('./src/config').ConfigFile}
  */
@@ -17,12 +18,15 @@ const config = {
     },
     test: {
       command:
-        'mkdir -p .test && echo banana > .test/bananas && cat .test/banana',
+        'mkdir -p .test && echo banana > .test/bananas',
       inputFiles: {
         include: ['package.json'],
       },
       inputCommands: ['yarn --version', 'node --version'],
       artifacts: ['.test'],
+      branches: {
+        never: ['jussie smolet']
+      },
     },
   },
 }
