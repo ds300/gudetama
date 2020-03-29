@@ -15,10 +15,12 @@ const config = {
       },
     },
     test: {
-      command: 'mkdir -p .test && echo banana > .test/banana && cat .test/banana',
+      command:
+        'mkdir -p .test && echo banana > .test/banana && cat .test/banana',
       inputFiles: {
         include: ['package.json'],
       },
+      inputCommands: ['yarn --version', 'node --version'],
       artifacts: ['.test'],
     },
   },

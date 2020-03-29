@@ -23,20 +23,23 @@ export function compareManifests({
   let j = 0
 
   while (i < previousLines.length || j < currentLines.length) {
-    const [filePrevious, previousHash] = (previousLines[i] || '').split('\t')
-    const [fileCurrent, currentHash] = (currentLines[j] || '').split('\t')
-    if (filePrevious === fileCurrent) {
+    const [previousThing, previousHash] = (previousLines[i] || '').split('\t')
+    const [currentThing, currentHash] = (currentLines[j] || '').split('\t')
+    if (previousThing === currentThing) {
       i++
       j++
       if (previousHash !== currentHash) {
-        changes.push(`${chalk.bold(fileCurrent)} was modified`)
+        changes.push(`${chalk.bold(currentThing)} was different`)
       }
-    } else if (filePrevious < fileCurrent || (filePrevious && !fileCurrent)) {
+    } else if (
+      previousThing < currentThing ||
+      (previousThing && !currentThing)
+    ) {
       i++
-      changes.push(`${chalk.bold(filePrevious)} was deleted`)
+      changes.push(`${chalk.bold(previousThing)} was removed`)
     } else {
       j++
-      changes.push(`${chalk.bold(fileCurrent)} was created`)
+      changes.push(`${chalk.bold(currentThing)} was added`)
     }
   }
 

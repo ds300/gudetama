@@ -1,13 +1,13 @@
 import fs from 'fs-extra'
 import path from 'path'
 import rimraf from 'rimraf'
-import { spawnSync } from 'child_process'
 import { S3StoreBackend } from './S3StoreBackend'
 import { log } from '../log'
 import prettyBytes from 'pretty-bytes'
 import { getStepKey, config, getManifestPath, getArchivePaths } from '../config'
 import { hashFile } from '../manifest/hash'
 import chalk from 'chalk'
+import { exec } from '../exec'
 
 const INDEX_VERSION = 0
 
@@ -455,16 +455,6 @@ export class GudetamaStore {
 
     return success
   }
-}
-
-function exec(command: string, args: string[]) {
-  const result = spawnSync(command, args)
-  if (result.status !== 0) {
-    log.fail(`ERROR: Shell command failed: ${command} ${args.join(' ')}`, {
-      detail: result.stderr.toString(),
-    })
-  }
-  return result.stdout.toString()
 }
 
 function objectComparator(
