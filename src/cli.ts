@@ -41,33 +41,50 @@ async function run([command, stepName]: string[]) {
         `Run ${chalk.gray("'")}${stepName}${chalk.gray("'")} if needed`
       )
       const currentManifestPath = getManifestPath({ stepName })
-      log.step(
-        `Computing manifest file ${chalk.cyan.bold(currentManifestPath)}`
+      await log.timedStep(
+        `Computing manifest file ${chalk.bold(currentManifestPath)}`,
+        () => writeManifest({ stepName })
       )
-      await writeManifest({ stepName })
 
       const result = await store.restoreManifest({ stepName })
 
+      let didRunCommand = false
+
       switch (result.type) {
         case 'exact':
+          log.step('Found an indentical manifest from a previous build! 🙌')
           if (!(await store.restoreArtifacts({ stepName }))) {
             await runCommand({ stepName })
+            didRunCommand = true
           }
           break
         case 'partial':
+          log.step(
+            `Comparing against a previous successful build on ${chalk.bold(
+              result.previousManifestBranch
+            )}`
+          )
           const diff = compareManifests({
             stepName,
             previousManifestPath: result.previousManifestPath,
           })
           if (diff.length) {
-            log.step('These files changed:')
+            console.log()
             diff.map(log.substep)
-            await runCommand({ stepName })
+            console.log()
+          } else {
+            log.substep(`No changes found, this probably should not happen 🤔`)
           }
+          await runCommand({ stepName })
+          didRunCommand = true
           break
         case 'none':
           await runCommand({ stepName })
+          didRunCommand = true
           break
+      }
+      if (!didRunCommand) {
+        log.step(`Didn't need to run! 🎉`)
       }
       done('Finished')
       break

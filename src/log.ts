@@ -4,10 +4,31 @@ function decapitalize(str: string) {
   return str && str[0].toLowerCase() + str.slice(1)
 }
 
-function timedSubstep(str: string): () => void
-function timedSubstep<T>(str: string, task: () => T | Promise<T>): Promise<T>
-function timedSubstep() {
-  const [str, task] = arguments
+async function timedStep<T>(
+  str: string,
+  task: () => T | Promise<T>
+): Promise<T> {
+  process.stdout.write(chalk.cyan(`• `) + str + '...')
+  const start = Date.now()
+  block()
+  const done = () => {
+    process.stdout.write(chalk.cyan(' ' + timeSince(start) + '\n'))
+    release()
+  }
+  try {
+    return await Promise.resolve(task()).then((result: any) => {
+      done()
+      return result
+    })
+  } catch (error) {
+    return log.fail('Unexpected error', { error })
+  }
+}
+
+async function timedSubstep<T>(
+  str: string,
+  task: () => T | Promise<T>
+): Promise<T> {
   process.stdout.write(chalk.grey('  ' + str + '...'))
   const start = Date.now()
   block()
@@ -15,19 +36,14 @@ function timedSubstep() {
     process.stdout.write(chalk.cyan(' ' + timeSince(start) + '\n'))
     release()
   }
-  if (task) {
-    try {
-      return Promise.resolve(task())
-        .then((result: any) => {
-          done()
-          return result
-        })
-        .catch((error) => log.fail('Unexpected error', { error }))
-    } catch (error) {
-      log.fail('Unexpected error', { error })
-    }
+  try {
+    return await Promise.resolve(task()).then((result: any) => {
+      done()
+      return result
+    })
+  } catch (error) {
+    return log.fail('Unexpected error', { error })
   }
-  return done
 }
 
 const logQueue: Array<() => void> = []
@@ -67,6 +83,7 @@ export const log = {
   success: (str: string) =>
     console.log('\n' + chalk.green(`✔`), chalk.bold(str)),
   info: (str: string) => console.log('💡', str),
+  timedStep,
   timedSubstep,
   timedTask: (str: string) => {
     log.task(str)

@@ -22,7 +22,8 @@ export interface Step {
   command?: string
   branches?: {
     only?: string[]
-    ignore?: string[]
+    always?: string[]
+    never?: string[]
   }
 }
 

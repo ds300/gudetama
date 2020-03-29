@@ -29,17 +29,17 @@ export function compareManifests({
       i++
       j++
       if (previousHash !== currentHash) {
-        changes.push(`${chalk.bold(currentThing)} was different`)
+        changes.push(chalk.cyan(`${chalk.bold(currentThing)} is different`))
       }
     } else if (
       previousThing < currentThing ||
       (previousThing && !currentThing)
     ) {
       i++
-      changes.push(`${chalk.bold(previousThing)} was removed`)
+      changes.push(chalk.red(`${chalk.bold(previousThing)} was removed`))
     } else {
       j++
-      changes.push(`${chalk.bold(currentThing)} was added`)
+      changes.push(chalk.green(`${chalk.bold(currentThing)} was added`))
     }
   }
 

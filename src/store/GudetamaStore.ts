@@ -259,10 +259,13 @@ export class GudetamaStore {
     | {
         type: 'exact'
       }
-    | { type: 'partial'; previousManifestPath: string }
+    | {
+        type: 'partial'
+        previousManifestPath: string
+        previousManifestBranch: string
+      }
     | { type: 'none' }
   > {
-    log.step(`Attempting to restore manifest`)
     const currentManifestHash = hashFile(getManifestPath({ stepName }))
     const previousManifestPath = path.join(
       this.tmpdir,
@@ -278,39 +281,33 @@ export class GudetamaStore {
     })
 
     if (await this.cache.getObject(exactMatchObjectKey, previousManifestPath)) {
-      log.substep(chalk.green('Found exact match!'))
       return { type: 'exact' }
     }
 
-    return await log.timedSubstep(
-      'No exact match found. Looking for fallbacks',
-      async () => {
-        const index = await this.getIndex({ stepName })
-        index.objects.sort(objectComparator)
-        for (const match of [
-          index.objects.find(
-            (o) => o.type === 'manifest' && o.branch === config.ci.currentBranch
-          ),
-          index.objects.find(
-            (o) => o.type === 'manifest' && o.branch === config.ci.primaryBranch
-          ),
-        ]) {
-          if (
-            match &&
-            (await this.cache.getObject(match.key, previousManifestPath))
-          ) {
-            log.substep(
-              `Found a manifest from a previous successful build on ${chalk.bold(
-                match.branch
-              )}`
-            )
-            process.env.GUDETAMA_PREVIOUS_SUCCESS_COMMIT = match.commit
-            return { type: 'partial', previousManifestPath } as const
-          }
-        }
-        return { type: 'none' } as const
+    const index = await this.getIndex({ stepName })
+    index.objects.sort(objectComparator)
+    for (const match of [
+      index.objects.find(
+        (o) => o.type === 'manifest' && o.branch === config.ci.currentBranch
+      ),
+      index.objects.find(
+        (o) => o.type === 'manifest' && o.branch === config.ci.primaryBranch
+      ),
+    ]) {
+      if (
+        match &&
+        (await this.cache.getObject(match.key, previousManifestPath))
+      ) {
+        process.env.GUDETAMA_PREVIOUS_SUCCESS_COMMIT = match.commit
+        return {
+          type: 'partial',
+          previousManifestPath,
+          previousManifestBranch: match.branch,
+        } as const
       }
-    )
+    }
+    log.step(`Couldn't find any previous builds`)
+    return { type: 'none' } as const
   }
 
   async restoreCaches({ stepName }: { stepName: string }) {

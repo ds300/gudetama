@@ -2,6 +2,7 @@
  * @type {import('./src/config').ConfigFile}
  */
 const config = {
+  cacheVersion: 1,
   steps: {
     'yarn install': {
       inputFiles: {
@@ -16,7 +17,7 @@ const config = {
     },
     test: {
       command:
-        'mkdir -p .test && echo banana > .test/banana && cat .test/banana',
+        'mkdir -p .test && echo banana > .test/bananas && cat .test/banana',
       inputFiles: {
         include: ['package.json'],
       },
