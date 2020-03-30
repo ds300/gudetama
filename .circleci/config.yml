@@ -9,7 +9,9 @@ jobs:
     executor: node/build
     steps:
       - checkout
-      - yarn install
+      - run:
+          name: install node_modules
+          command: yarn install
       - run:
           name: deploy
           command: ./scripts/deploy
