@@ -4,6 +4,7 @@ if ! git checkout dist
 then
   git checkout -b dist
 else
+  git reset origin/dist --hard
   git checkout master .
 fi
 yarn build

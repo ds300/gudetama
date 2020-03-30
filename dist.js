@@ -3417,7 +3417,7 @@ function s3Download(_a) {
                         var fh = fs.openSync(filePath, 'w');
                         var totalBytesWritten = 0;
                         res.on('data', function (d) {
-                            fs.writeSync(fh, d, totalBytesWritten);
+                            fs.writeSync(fh, d, 0, d.length, totalBytesWritten);
                             totalBytesWritten += d.length;
                         });
                         res.on('end', function () {
