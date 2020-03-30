@@ -4,6 +4,7 @@ if ! git checkout dist
 then
   git checkout -b dist
 else
+  git pull
   git checkout master .
 fi
 yarn build
