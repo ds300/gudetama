@@ -1,7 +1,11 @@
 set -e
 
-git checkout dist
-git checkout master .
+if ! git checkout dist
+then
+  git checkout -b dist
+else
+  git checkout master .
+fi
 yarn build
 mv dist/cli.js ./dist.js
 git add -f ./dist.js
@@ -10,7 +14,10 @@ git commit -m "Update app + dist.js [skip ci]"
 yarn babel-node scripts/create-install-script.ts
 git add -f ./install.sh
 git commit -m "Update install script [skip ci]"
-git push
+if ! git push
+then
+  git push --set-upstream origin dist
+fi
 
 install_commit=$(git ref-parse HEAD)
 
