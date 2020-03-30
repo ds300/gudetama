@@ -8,6 +8,8 @@ jobs:
   deploy:
     executor: node/build
     steps:
+      - checkout
+      - yarn install
       - run:
           name: deploy
           command: ./scripts/deploy
@@ -16,12 +18,13 @@ workflows:
   deploy:
     jobs:
       - yarn/workflow-queue
-      - yarn/update-cache:
-          requires:
-            - yarn/workflow-queue
+          filters:
+            branches:
+              only:
+                - master
       - deploy:
           requires:
-            - yarn/update-cache
+            - yarn/workflow-queue
           filters:
             branches:
               only:
