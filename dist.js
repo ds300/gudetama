@@ -10774,6 +10774,8 @@ function runCommand(_a) {
     });
 }
 
+var version$1 = "1.0.0-0";
+
 function required(name) {
     return source.gray('<') + name + source.gray('>');
 }
@@ -10784,7 +10786,6 @@ var renderStepName = function (_a) {
     var stepName = _a.stepName;
     return "" + source.gray("'") + stepName + source.gray("'");
 };
-var version$1 = require('../package.json').version;
 function run(_a) {
     var _b = __read(_a, 2), command = _b[0], stepName = _b[1];
     var _c, _d, _e, _f, _g;

@@ -5,6 +5,7 @@ import { runCommand } from './runCommand'
 import chalk from 'chalk'
 import { log } from './log'
 import { store } from './store/store'
+import { version } from '../package.json'
 
 function required(name: string) {
   return chalk.gray('<') + name + chalk.gray('>')
@@ -32,8 +33,6 @@ COMMANDS
 
 const renderStepName = ({ stepName }: { stepName: string }) =>
   `${chalk.gray("'")}${stepName}${chalk.gray("'")}`
-
-const { version } = require('../package.json')
 
 async function run([command, stepName]: string[]) {
   if (command.match(/^(-v|--version)$/)) {
