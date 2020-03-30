@@ -211,11 +211,11 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
     req.on('response', (res) => {
       const fh = fs.openSync(filePath, 'w')
       let totalBytesWritten = 0
-      res.on('data', function (d) {
-        fs.writeSync(fh, d, totalBytesWritten)
+      res.on('data', (d: Buffer) => {
+        fs.writeSync(fh, d, 0, d.length, totalBytesWritten)
         totalBytesWritten += d.length
       })
-      res.on('end', function () {
+      res.on('end', () => {
         fs.closeSync(fh)
         switch (res.statusCode) {
           case 404:
