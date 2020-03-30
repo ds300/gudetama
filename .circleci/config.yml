@@ -8,6 +8,10 @@ jobs:
   deploy:
     executor: node/build
     steps:
+      - run:
+          name: install gudetama
+          command: |
+            curl -s https://raw.githubusercontent.com/artsy/gudetama/1901e64cffc3cf79d9ab9c68fbbf9eacd3403840/install.sh | source /dev/stdin
       - queue/until_front_of_line:
           time: "2" # how long a queue will wait until the job exits
           only-on-branch: master # restrict queueing to a specific branch (default *)
@@ -18,7 +22,8 @@ jobs:
       - checkout
       - run:
           name: install node_modules
-          command: yarn install
+          # command: gudetama run-if-needed install_node_modules
+          command: yarn
       - run:
           name: deploy
           command: ./scripts/deploy.sh
