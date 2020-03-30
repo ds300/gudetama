@@ -4,3 +4,5 @@ node_modules
 dist
 .gudetama-manifests
 .test
+install.sh
+dist.js
