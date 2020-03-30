@@ -8,6 +8,9 @@ jobs:
   deploy:
     executor: node/build
     steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "ba:dc:36:72:d2:df:5e:68:cc:1e:4e:b8:39:a4:5a:d8"
       - checkout
       - run:
           name: install node_modules
