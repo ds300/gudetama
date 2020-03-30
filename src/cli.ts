@@ -83,7 +83,7 @@ async function run([command, stepName]: string[]) {
 
       switch (result.type) {
         case 'exact':
-          log.step('Found an indentical manifest from a previous build! 🙌')
+          log.step('Found an identical manifest from a previous build! 🙌')
           if (!(await store.restoreArtifacts({ stepName }))) {
             await runCommand({ stepName })
             didRunCommand = true
