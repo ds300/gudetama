@@ -1,16 +1,20 @@
 version: 2.1
 
 orbs:
-  yarn: artsy/yarn@4.0.2
   node: artsy/node@1.0.0
+  queue: eddiewebb/queue@1.0.110
 
 jobs:
   deploy:
     executor: node/build
     steps:
+      - queue/until_front_of_line:
+          time: "2" # how long a queue will wait until the job exits
+          only-on-branch: master # restrict queueing to a specific branch (default *)
+          consider-job: false # block whole workflow if any job still running
       - add_ssh_keys:
           fingerprints:
-            - "ba:dc:36:72:d2:df:5e:68:cc:1e:4e:b8:39:a4:5a:d8"
+            - 'ba:dc:36:72:d2:df:5e:68:cc:1e:4e:b8:39:a4:5a:d8'
       - checkout
       - run:
           name: install node_modules
@@ -22,14 +26,7 @@ jobs:
 workflows:
   deploy:
     jobs:
-      - yarn/workflow-queue:
-          filters:
-            branches:
-              only:
-                - master
       - deploy:
-          requires:
-            - yarn/workflow-queue
           filters:
             branches:
               only:
