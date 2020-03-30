@@ -17,7 +17,7 @@ jobs:
 workflows:
   deploy:
     jobs:
-      - yarn/workflow-queue
+      - yarn/workflow-queue:
           filters:
             branches:
               only:
