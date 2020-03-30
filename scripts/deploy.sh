@@ -24,5 +24,5 @@ install_commit=$(git rev-parse HEAD)
 git checkout master
 yarn babel-node scripts/update-readme.ts $install_commit
 git add README.md
-git commit -m "🤖 Update release hash in README [skip-ci]"
+git commit -m "🤖 Update release hash in README [skip ci]"
 git push
