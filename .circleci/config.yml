@@ -11,6 +11,7 @@ jobs:
       - run:
           name: install gudetama
           command: |
+            # the_install_command_is_on_the_next_line
             curl -s https://raw.githubusercontent.com/artsy/gudetama/8d54748eedce2f63279164266078dd0586419860/install.sh | source /dev/stdin
       - queue/until_front_of_line:
           time: "2" # how long a queue will wait until the job exits
