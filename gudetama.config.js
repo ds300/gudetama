@@ -5,11 +5,12 @@
 const config = {
   cacheVersion: 1,
   steps: {
-    'yarn install': {
+    install_node_modules: {
+      command: 'yarn',
       inputFiles: {
         include: ['yarn.lock'],
       },
-      artifacts: ['node_modules/chalk'],
+      artifacts: ['node_modules'],
     },
     'yarn test': {
       inputFiles: {
@@ -17,15 +18,14 @@ const config = {
       },
     },
     test: {
-      command:
-        'mkdir -p .test && echo banana > .test/bananas',
+      command: 'mkdir -p .test && echo banana > .test/bananas',
       inputFiles: {
         include: ['package.json'],
       },
       inputCommands: ['yarn --version', 'node --version'],
       artifacts: ['.test'],
       branches: {
-        never: ['jussie smolet']
+        never: ['jussie smolet'],
       },
     },
   },
