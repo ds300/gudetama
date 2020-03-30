@@ -23,7 +23,6 @@ jobs:
       - run:
           name: install node_modules
           command: gudetama run-if-needed install_node_modules
-          # command: yarn
       - run:
           name: deploy
           command: ./scripts/deploy.sh
