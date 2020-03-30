@@ -22,6 +22,7 @@ workflows:
       - deploy:
           requires:
             - yarn/update-cache
-          branches:
-            only:
-              - master
+          filters:
+            branches:
+              only:
+                - master
