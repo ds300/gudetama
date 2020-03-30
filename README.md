@@ -11,5 +11,5 @@ Extremely WIP
 Add this to the start of your CI script
 
 <!-- the_installation_command_is_on_the_next_line -->
-    curl -s https://raw.githubusercontent.com/artsy/gudetama/963785a6c98e7a578c9a1af60ed8f9b95ade16c1/install.sh | source /dev/stdin
+    curl -s https://raw.githubusercontent.com/artsy/gudetama/01a6d2478cdcbabd1c57cea16c5fef347779a381/install.sh | source /dev/stdin
     TODO
