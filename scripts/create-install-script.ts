@@ -6,6 +6,7 @@ const currentCommit = execSync('git rev-parse HEAD').toString().trim()
 fs.writeFileSync(
   'install.sh',
   `
+  set -e
   mkdir -p ~/.gudetama/bin
   echo '#!/usr/bin/env node' > ~/.gudetama/bin/gudetama
   curl https://raw.githubusercontent.com/artsy/gudetama/${currentCommit}/dist.js >> ~/.gudetama/bin/gudetama
