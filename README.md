@@ -11,7 +11,7 @@
 
 ## but how
 
-You specify exactly which inputs dictate the outcome of a CI step. The inputs can be files, env vars, tool versions, or anything. During a build, right before running the step, `gudetama` checks the current values of those things against the values on a previous successful build. If any of them changed it tells you exactly which ones, and then re-runs the step. If none of them changed `gudetama` skips running the step. If any files were supposed to be generated and passed to later steps, `gudetama` will restore them from a cache of the previous build.
+First you declare all the things that can affect the outcome of a particular CI step. They can be files, env vars, tool versions, or anything you can write to `stdout`. Then before running that particular CI step, `gudetama` compares the current values of those things against their values on a previous successful build. If any of them changed it lists the differences, and re-runs the step. If none of them changed `gudetama` skips the step. If any files were supposed to be generated and passed to later steps, `gudetama` will restore them from a cache of the previous build.
 
 ## project status
 
@@ -22,7 +22,7 @@ Extremely WIP
 Add this to the start of your CI script
 
 <!-- the_installation_command_is_on_the_next_line -->
-    curl -s https://raw.githubusercontent.com/artsy/gudetama/e7c962ba689c5e9fff6bc9279de8c23f79dcb430/install.sh | source /dev/stdin
+    curl -s https://raw.githubusercontent.com/artsy/gudetama/2d1a78fcce4ea5a2e9edead74c4a66a47ba4d77e/install.sh | source /dev/stdin
 
 ## about artsy
 
