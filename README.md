@@ -1,6 +1,8 @@
-# @artsy/gudetama
-
-Do as little as possible in CI
+<p align="center">
+  <img width="225px" src="https://user-images.githubusercontent.com/1242537/78022124-550f5b80-734c-11ea-880d-14782a994c0b.png" alt="a tired lazy egg" />
+  <h1 align="center" border="none">gudetama</h1>
+  <p align="center">Next-level CI optimization for supremely lazy builds</p>
+</p>
 
 ## Project status
 
