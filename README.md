@@ -11,7 +11,7 @@
 
 ## but how
 
-You specify exactly which files (or env vars, or tool versions, or anything) dictate the outcome of a CI step. When the build gets to that step, `gudetama` checks the current values of those things against the values on a previous successful build. If any of them changed it tells you exactly which ones, and then re-runs the step. If none of them changed `gudetama` restores the artifacts you named as being outputs of that step for use downstream (if any).
+You specify exactly which inputs dictate the outcome of a CI step. The inputs can be files, env vars, tool versions, or anything. During a build, right before running the step, `gudetama` checks the current values of those things against the values on a previous successful build. If any of them changed it tells you exactly which ones, and then re-runs the step. If none of them changed `gudetama` skips running the step. If any files were supposed to be generated and passed to later steps, `gudetama` will restore them from a cache of the previous build.
 
 ## project status
 
