@@ -1,6 +1,8 @@
-# @artsy/gudetama
-
-Do as little as possible in CI
+<p align="center">
+  <img width="225px" src="https://user-images.githubusercontent.com/1242537/78022124-550f5b80-734c-11ea-880d-14782a994c0b.png" alt="a tired lazy egg" />
+  <h1 align="center" border="none">gudetama</h1>
+  <p align="center">Next-level CI optimization for supremely lazy builds</p>
+</p>
 
 ## Project status
 
@@ -11,7 +13,7 @@ Extremely WIP
 Add this to the start of your CI script
 
 <!-- the_installation_command_is_on_the_next_line -->
-    curl -s https://raw.githubusercontent.com/artsy/gudetama/b5031f6f14f9f186028cd5644a538dbcb30f3d42/install.sh | source /dev/stdin
+    curl -s https://raw.githubusercontent.com/artsy/gudetama/0b19dbb6d9f4198ec2866524a356783d4ef6457b/install.sh | source /dev/stdin
 
 ## About Artsy
 
