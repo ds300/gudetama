@@ -118,7 +118,7 @@ export class GudetamaStore {
           index.objects.splice(existing, 1)
         }
         index.objects.push({
-          branch: config.ci.currentBranch,
+          branch: config.currentBranch,
           type: objectType,
           creationDate: new Date().toISOString(),
           key: objectKey,
@@ -187,7 +187,7 @@ export class GudetamaStore {
     return `${getStepKey({ stepName })}-${objectType}-${
       // caches do not need exact matching (in fact it balloons cache size)
       // so we only store them by branch
-      objectType === 'cache' ? config.ci.currentBranch : currentManifestHash
+      objectType === 'cache' ? config.currentBranch : currentManifestHash
     }`
   }
 
@@ -288,10 +288,10 @@ export class GudetamaStore {
     index.objects.sort(objectComparator)
     for (const match of [
       index.objects.find(
-        (o) => o.type === 'manifest' && o.branch === config.ci.currentBranch
+        (o) => o.type === 'manifest' && o.branch === config.currentBranch
       ),
       index.objects.find(
-        (o) => o.type === 'manifest' && o.branch === config.ci.primaryBranch
+        (o) => o.type === 'manifest' && o.branch === config.primaryBranch
       ),
     ]) {
       if (
@@ -323,13 +323,11 @@ export class GudetamaStore {
       for (const match of [
         index.objects.find(
           (o) =>
-            o.type === 'persistent_cache' &&
-            o.branch === config.ci.currentBranch
+            o.type === 'persistent_cache' && o.branch === config.currentBranch
         ),
         index.objects.find(
           (o) =>
-            o.type === 'persistent_cache' &&
-            o.branch === config.ci.primaryBranch
+            o.type === 'persistent_cache' && o.branch === config.primaryBranch
         ),
       ]) {
         if (
@@ -360,10 +358,10 @@ export class GudetamaStore {
     if (cachePaths.length) {
       for (const match of [
         index.objects.find(
-          (o) => o.type === 'cache' && o.branch === config.ci.currentBranch
+          (o) => o.type === 'cache' && o.branch === config.currentBranch
         ),
         index.objects.find(
-          (o) => o.type === 'cache' && o.branch === config.ci.primaryBranch
+          (o) => o.type === 'cache' && o.branch === config.primaryBranch
         ),
       ]) {
         if (

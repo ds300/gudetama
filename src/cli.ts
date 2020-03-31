@@ -45,23 +45,23 @@ async function run([command, stepName]: string[]) {
     case 'run-if-needed':
       const step = getStep({ stepName })
       if (
-        step.branches?.never?.includes(config.ci.currentBranch) ||
+        step.branches?.never?.includes(config.currentBranch) ||
         (step.branches?.only &&
-          !step.branches.only.includes(config.ci.currentBranch))
+          !step.branches.only.includes(config.currentBranch))
       ) {
         log.task(
           `Skipping ${renderStepName({
             stepName,
-          })} because this is the ${chalk.cyan(config.ci.currentBranch)} branch`
+          })} because this is the ${chalk.cyan(config.currentBranch)} branch`
         )
         return
       }
 
-      if (step.branches?.always?.includes(config.ci.currentBranch)) {
+      if (step.branches?.always?.includes(config.currentBranch)) {
         const done = log.timedTask(
           `Running ${renderStepName({
             stepName,
-          })} because this is the ${chalk.cyan(config.ci.currentBranch)} branch`
+          })} because this is the ${chalk.cyan(config.currentBranch)} branch`
         )
         await runCommand({ stepName })
         done('Finished')

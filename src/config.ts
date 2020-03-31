@@ -31,17 +31,14 @@ export interface Steps {
   [step_name: string]: Step
 }
 
-interface CIConfig {
-  currentBranch: string
-  primaryBranch: string
-}
-
 export interface ConfigFile {
+  repoID: string
+  cacheVersion: number
   steps: Steps
   getCacheBackend?(): GudetamaStoreBackend
-  ci?: CIConfig
+  currentBranch?: string
+  primaryBranch?: string
   manifestDir?: string
-  cacheVersion: number
 }
 
 function getCurrentBranch() {
@@ -80,14 +77,12 @@ function loadConfig(): Required<ConfigFile> {
   const userConfig = require(path.join(process.cwd(), file)) as ConfigFile
 
   const config = {
-    ci: {
-      currentBranch:
-        process.env.CIRCLE_BRANCH ||
-        process.env.TRAVIS_BRANCH ||
-        getCurrentBranch(),
-      primaryBranch: 'master',
-      ...userConfig.ci,
-    },
+    currentBranch:
+      userConfig.currentBranch ||
+      process.env.CIRCLE_BRANCH ||
+      process.env.TRAVIS_BRANCH ||
+      getCurrentBranch(),
+    primaryBranch: userConfig.primaryBranch || 'master',
     manifestDir: '.gudetama-manifests',
     getCacheBackend() {
       return new S3StoreBackend()
@@ -134,7 +129,7 @@ export function getStepKey({ stepName }: { stepName: string }) {
   const step = getStep({ stepName })
   const slug = slugify(stepName)
   const stepHash = hashString(stableStringify(step))
-  return [slug, config.cacheVersion, stepHash].join('-')
+  return [config.repoID, config.cacheVersion, slug, stepHash].join('-')
 }
 
 export function getManifestPath({ stepName }: { stepName: string }) {
