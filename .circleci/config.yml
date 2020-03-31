@@ -12,7 +12,7 @@ jobs:
           name: install gudetama
           command: |
             # the_install_command_is_on_the_next_line
-            curl -s https://raw.githubusercontent.com/artsy/gudetama/b65f9e386857dfb7e893016f68509938329e9410/install.sh | source /dev/stdin
+            curl -s https://raw.githubusercontent.com/artsy/gudetama/3e43dbd406098d94278c53e489d6a302622f95c4/install.sh | source /dev/stdin
       - queue/until_front_of_line:
           time: "2" # how long a queue will wait until the job exits
           only-on-branch: master # restrict queueing to a specific branch (default *)
