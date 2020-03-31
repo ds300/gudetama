@@ -5,18 +5,26 @@
   <h4 align="center">Next-level CI optimization for supremely lazy (and fast) builds</h4>
 </p>
 
-## Project status
+## what
+
+`gudetama` lets you avoid re-running steps in your CI pipeline when there's no need to run them again.
+
+## but how
+
+You specify exactly which files (or env vars, or tool versions, or anything) dictate the outcome of a CI step. When the build gets to that step, `gudetama` checks the current values of those files against the values on a previous successful build. If any of them changed it tells you exactly which ones, and then re-runs the step. If none of them changed `gudetama` restores the artifacts you named as being outputs of that step for use downstream (if any).
+
+## project status
 
 Extremely WIP
 
-## Installing on CI
+## installing on CI
 
 Add this to the start of your CI script
 
 <!-- the_installation_command_is_on_the_next_line -->
     curl -s https://raw.githubusercontent.com/artsy/gudetama/b65f9e386857dfb7e893016f68509938329e9410/install.sh | source /dev/stdin
 
-## About Artsy
+## about artsy
 
 <a href="https://www.artsy.net/">
   <img align="left" src="https://avatars2.githubusercontent.com/u/546231?s=200&v=4"/>
