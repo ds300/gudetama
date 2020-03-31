@@ -22,7 +22,7 @@ Extremely WIP
 Add this to the start of your CI script
 
 <!-- the_installation_command_is_on_the_next_line -->
-    curl -s https://raw.githubusercontent.com/artsy/gudetama/2d1a78fcce4ea5a2e9edead74c4a66a47ba4d77e/install.sh | source /dev/stdin
+    curl -s https://raw.githubusercontent.com/artsy/gudetama/7c07020ad8c616d50f187abd7d023e593d5b69a0/install.sh | source /dev/stdin
 
 ## about artsy
 
