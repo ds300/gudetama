@@ -3541,9 +3541,10 @@ function loadConfig() {
         log.fail("Can't find gudetama config file at '" + file + "'");
     }
     var userConfig = require(path$1.join(process.cwd(), file));
-    var config = __assign({ ci: __assign({ currentBranch: process.env.CIRCLE_BRANCH ||
-                process.env.TRAVIS_BRANCH ||
-                getCurrentBranch(), primaryBranch: 'master' }, userConfig.ci), manifestDir: '.gudetama-manifests', getCacheBackend: function () {
+    var config = __assign({ currentBranch: userConfig.currentBranch ||
+            process.env.CIRCLE_BRANCH ||
+            process.env.TRAVIS_BRANCH ||
+            getCurrentBranch(), primaryBranch: userConfig.primaryBranch || 'master', manifestDir: '.gudetama-manifests', getCacheBackend: function () {
             return new S3StoreBackend();
         } }, userConfig);
     checkStepNamesDontClash(config);
@@ -3583,7 +3584,7 @@ function getStepKey(_a) {
     var step = getStep({ stepName: stepName });
     var slug = slugify(stepName);
     var stepHash = hashString(fastJsonStableStringify(step));
-    return [slug, config.cacheVersion, stepHash].join('-');
+    return [config.repoID, config.cacheVersion, slug, stepHash].join('-');
 }
 function getManifestPath(_a) {
     var stepName = _a.stepName;
@@ -10308,7 +10309,7 @@ var GudetamaStore = /** @class */ (function () {
                     index.objects.splice(existing, 1);
                 }
                 index.objects.push({
-                    branch: config.ci.currentBranch,
+                    branch: config.currentBranch,
                     type: objectType,
                     creationDate: new Date().toISOString(),
                     key: objectKey,
@@ -10382,7 +10383,7 @@ var GudetamaStore = /** @class */ (function () {
         return getStepKey({ stepName: stepName }) + "-" + objectType + "-" + (
         // caches do not need exact matching (in fact it balloons cache size)
         // so we only store them by branch
-        objectType === 'cache' ? config.ci.currentBranch : currentManifestHash);
+        objectType === 'cache' ? config.currentBranch : currentManifestHash);
     };
     GudetamaStore.prototype.persistObject = function (_a) {
         var stepName = _a.stepName, objectType = _a.objectType, filePath = _a.filePath, currentManifestHash = _a.currentManifestHash;
@@ -10473,8 +10474,8 @@ var GudetamaStore = /** @class */ (function () {
                     case 3:
                         _f.trys.push([3, 9, 10, 11]);
                         _b = __values([
-                            index.objects.find(function (o) { return o.type === 'manifest' && o.branch === config.ci.currentBranch; }),
-                            index.objects.find(function (o) { return o.type === 'manifest' && o.branch === config.ci.primaryBranch; }),
+                            index.objects.find(function (o) { return o.type === 'manifest' && o.branch === config.currentBranch; }),
+                            index.objects.find(function (o) { return o.type === 'manifest' && o.branch === config.primaryBranch; }),
                         ]), _c = _b.next();
                         _f.label = 4;
                     case 4:
@@ -10570,12 +10571,10 @@ var GudetamaStore = /** @class */ (function () {
                         _j.trys.push([2, 7, 8, 9]);
                         _c = __values([
                             index.objects.find(function (o) {
-                                return o.type === 'persistent_cache' &&
-                                    o.branch === config.ci.currentBranch;
+                                return o.type === 'persistent_cache' && o.branch === config.currentBranch;
                             }),
                             index.objects.find(function (o) {
-                                return o.type === 'persistent_cache' &&
-                                    o.branch === config.ci.primaryBranch;
+                                return o.type === 'persistent_cache' && o.branch === config.primaryBranch;
                             }),
                         ]), _d = _c.next();
                         _j.label = 3;
@@ -10637,8 +10636,8 @@ var GudetamaStore = /** @class */ (function () {
                     case 10:
                         _j.trys.push([10, 15, 16, 17]);
                         _e = __values([
-                            index.objects.find(function (o) { return o.type === 'cache' && o.branch === config.ci.currentBranch; }),
-                            index.objects.find(function (o) { return o.type === 'cache' && o.branch === config.ci.primaryBranch; }),
+                            index.objects.find(function (o) { return o.type === 'cache' && o.branch === config.currentBranch; }),
+                            index.objects.find(function (o) { return o.type === 'cache' && o.branch === config.primaryBranch; }),
                         ]), _f = _e.next();
                         _j.label = 11;
                     case 11:
@@ -10810,18 +10809,18 @@ function run(_a) {
                     return [3 /*break*/, 17];
                 case 1:
                     step = getStep({ stepName: stepName });
-                    if (((_d = (_c = step.branches) === null || _c === void 0 ? void 0 : _c.never) === null || _d === void 0 ? void 0 : _d.includes(config.ci.currentBranch)) ||
+                    if (((_d = (_c = step.branches) === null || _c === void 0 ? void 0 : _c.never) === null || _d === void 0 ? void 0 : _d.includes(config.currentBranch)) ||
                         (((_e = step.branches) === null || _e === void 0 ? void 0 : _e.only) &&
-                            !step.branches.only.includes(config.ci.currentBranch))) {
+                            !step.branches.only.includes(config.currentBranch))) {
                         log.task("Skipping " + renderStepName({
                             stepName: stepName
-                        }) + " because this is the " + source.cyan(config.ci.currentBranch) + " branch");
+                        }) + " because this is the " + source.cyan(config.currentBranch) + " branch");
                         return [2 /*return*/];
                     }
-                    if (!((_g = (_f = step.branches) === null || _f === void 0 ? void 0 : _f.always) === null || _g === void 0 ? void 0 : _g.includes(config.ci.currentBranch))) return [3 /*break*/, 3];
+                    if (!((_g = (_f = step.branches) === null || _f === void 0 ? void 0 : _f.always) === null || _g === void 0 ? void 0 : _g.includes(config.currentBranch))) return [3 /*break*/, 3];
                     done_1 = log.timedTask("Running " + renderStepName({
                         stepName: stepName
-                    }) + " because this is the " + source.cyan(config.ci.currentBranch) + " branch");
+                    }) + " because this is the " + source.cyan(config.currentBranch) + " branch");
                     return [4 /*yield*/, runCommand({ stepName: stepName })];
                 case 2:
                     _k.sent();
@@ -10845,7 +10844,7 @@ function run(_a) {
                     }
                     return [3 /*break*/, 14];
                 case 6:
-                    log.step('Found an indentical manifest from a previous build! 🙌');
+                    log.step('Found an identical manifest from a previous build! 🙌');
                     return [4 /*yield*/, store.restoreArtifacts({ stepName: stepName })];
                 case 7:
                     if (!!(_k.sent())) return [3 /*break*/, 9];

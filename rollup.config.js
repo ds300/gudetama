@@ -9,5 +9,11 @@ export default {
     dir: 'dist',
     format: 'cjs',
   },
-  plugins: [typescript(), resolve({ jsnext: true }), commonjs(), json()],
+  plugins: [
+    typescript(),
+    resolve({ jsnext: true, preferBuiltins: true }),
+    commonjs(),
+    json(),
+  ],
+  external: [...require('module').builtinModules]
 }

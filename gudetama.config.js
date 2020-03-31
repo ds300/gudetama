@@ -3,6 +3,7 @@
  * @type {import('./src/config').ConfigFile}
  */
 const config = {
+  repoID: 'gudetama',
   cacheVersion: 1,
   steps: {
     install_node_modules: {
