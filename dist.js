@@ -3563,7 +3563,7 @@ function getArchivePaths(_a) {
     var persistentCachePaths = [];
     var cachePaths = [];
     var artifactPaths = [];
-    (_b = step.artifacts) === null || _b === void 0 ? void 0 : _b.forEach(function (path) {
+    (_b = step.outputFiles) === null || _b === void 0 ? void 0 : _b.forEach(function (path) {
         var _a;
         if ((_a = step.caches) === null || _a === void 0 ? void 0 : _a.includes(path)) {
             persistentCachePaths.push(path);
