@@ -11,7 +11,7 @@ const config = {
       inputFiles: {
         include: ['yarn.lock'],
       },
-      artifacts: ['node_modules'],
+      outputFiles: ['node_modules'],
     },
     'yarn test': {
       inputFiles: {
@@ -23,8 +23,8 @@ const config = {
       inputFiles: {
         include: ['package.json'],
       },
+      outputFiles: ['.test'],
       inputCommands: ['yarn --version', 'node --version'],
-      artifacts: ['.test'],
       branches: {
         never: ['jussie smolet'],
       },

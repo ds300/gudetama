@@ -17,7 +17,7 @@ export interface InputFiles {
 export interface Step {
   inputFiles?: InputFiles
   inputCommands?: string[]
-  artifacts?: string[]
+  outputFiles?: string[]
   caches?: string[]
   command?: string
   branches?: {
@@ -108,7 +108,7 @@ export function getArchivePaths({ stepName }: { stepName: string }) {
   const cachePaths: string[] = []
   const artifactPaths: string[] = []
 
-  step.artifacts?.forEach((path) => {
+  step.outputFiles?.forEach((path) => {
     if (step.caches?.includes(path)) {
       persistentCachePaths.push(path)
     } else {
