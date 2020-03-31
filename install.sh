@@ -2,7 +2,7 @@
   set -e
   mkdir -p ~/.gudetama/bin
   echo '#!/usr/bin/env node' > ~/.gudetama/bin/gudetama
-  curl https://raw.githubusercontent.com/artsy/gudetama/49a15203480c4fe960d7d014c74dcccc35ac4b6e/dist.js >> ~/.gudetama/bin/gudetama
+  curl https://raw.githubusercontent.com/artsy/gudetama/bdd34ed603de9bf171bf0d8b52dcd703eda041dd/dist.js >> ~/.gudetama/bin/gudetama
   chmod +x ~/.gudetama/bin/gudetama
   if [[ -z "$BASH_ENV" ]]
   then
