@@ -107,7 +107,7 @@ async function release() {
   }
 
   log.step(`Uploading release artifacts`)
-  log.substep(`install.sh.gz`)
+  log.substep(`install.sh`)
 
   writeFileSync('install.sh', createInstallScript({ releaseTag }))
   await gh.repos.uploadReleaseAsset({
