@@ -21,7 +21,7 @@ Extremely WIP
 
 Add this to the start of your CI script
 
-    curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-4/install.sh | source /dev/stdin
+    curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-5/install.sh | source /dev/stdin
 
 ## about artsy
 
