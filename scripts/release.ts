@@ -82,6 +82,9 @@ async function release() {
   execSync(`yarn build-bundle`, { stdio: 'inherit' })
 
   log.step(`Publishing npm package`)
+  execSync(
+    `npm set //registry.npmjs.org/:_authToken '${process.env.NPM_TOKEN}'`
+  )
   execSync(`npm publish`)
 
   log.step(`Pushing to github`)
