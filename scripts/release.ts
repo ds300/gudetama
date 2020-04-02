@@ -71,7 +71,9 @@ async function release() {
   execSync(`git commit -m 'Release ${releaseTag} [skip ci]'`, {
     stdio: 'inherit',
   })
-  execSync(`git tag -a '${releaseTag}'`, { stdio: 'inherit' })
+  execSync(`git tag -a '${releaseTag}' -m 'Release ${releaseTag}'`, {
+    stdio: 'inherit',
+  })
 
   log.step(`Building npm package`)
   execSync(`yarn build-npm`, { stdio: 'inherit' })
