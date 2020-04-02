@@ -21,7 +21,7 @@ Extremely WIP
 
 Add this to the start of your CI script
 
-    curl -s https://github.com/artsy/gudetama/releases/download/v1.0.0-0/install.sh.gz | gunzip | source /dev/stdin
+    curl -s https://github.com/artsy/gudetama/releases/download/v1.0.0-1/install.sh.gz | gunzip | source /dev/stdin
 
 ## about artsy
 
