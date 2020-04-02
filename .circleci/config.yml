@@ -11,7 +11,7 @@ jobs:
       - run:
           name: install gudetama
           command: |
-            # curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-4/install.sh | source /dev/stdin
+            curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-4/install.sh | source /dev/stdin
       - queue/until_front_of_line:
           time: '2' # how long a queue will wait until the job exits
           only-on-branch: master # restrict queueing to a specific branch (default *)
@@ -22,8 +22,7 @@ jobs:
       - checkout
       - run:
           name: install node_modules
-          # command: gudetama run-if-needed install_node_modules
-          command: yarn install
+          command: gudetama run-if-needed install_node_modules
       - run:
           name: type check
           command: yarn tsc
