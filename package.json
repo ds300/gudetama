@@ -25,7 +25,7 @@
     "build-bundle": "./scripts/build-bundle.sh",
     "compress": "gzip dist/cli.js",
     "babel-node": "babel-node --extensions '.ts'",
-    "release": "babel-node scripts/release.ts",
+    "release": "yarn babel-node scripts/release.ts",
     "type-check": "tsc --pretty --noEmit"
   },
   "lint-changed": {
