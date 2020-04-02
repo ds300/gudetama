@@ -131,11 +131,11 @@ async function release() {
     repo: 'gudetama',
     owner: 'artsy',
     release_id: releaseResponse.data.id,
-    data: readFileSync(`gudetama.${releaseTag}.js`) as any,
-    name: `gudetama.${releaseTag}.js`,
+    data: readFileSync(`gudetama.${releaseTag}.js.gz`) as any,
+    name: `gudetama.${releaseTag}.js.gz`,
     headers: {
       'content-type': 'application/octet-stream',
-      'content-length': statSync(`gudetama.${releaseTag}.js`).size,
+      'content-length': statSync(`gudetama.${releaseTag}.js.gz`).size,
     },
   })
 
