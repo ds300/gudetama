@@ -2,7 +2,7 @@
   <img width="227" alt="gudetama" src="https://user-images.githubusercontent.com/1242537/78023111-fa76ff00-734d-11ea-9565-fdcdf9ac9b23.png">
 
   <h1 align="center" border="none">gudetama</h1>
-  <h4 align="center">Next-level CI optimization for supremely lazy (and fast) builds</h4>
+  <h4 align="center">Next-level CI optimization for lazy (fast) builds</h4>
 </p>
 
 ## what
