@@ -1,6 +1,6 @@
 {
   "name": "@artsy/gudetama",
-  "version": "1.0.0-6",
+  "version": "1.0.0-7",
   "description": "Make your CI scripts as lazy as possible",
   "main": "index.js",
   "bin": {
