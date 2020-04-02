@@ -1,9 +1,8 @@
 export function createInstallScript({ releaseTag }: { releaseTag: string }) {
   return `
-set -e
+  set -e
 mkdir -p ~/.gudetama/bin
-echo '#!/usr/bin/env node' > ~/.gudetama/bin/gudetama
-curl https://github.com/artsy/gudetama/releases/download/${releaseTag}/gudetama.${releaseTag}.js.gz | gunzip >> ~/.gudetama/bin/gudetama
+curl -s -L https://github.com/artsy/gudetama/releases/download/${releaseTag}/gudetama.${releaseTag}.js.gz | gunzip > ~/.gudetama/bin/gudetama
 chmod +x ~/.gudetama/bin/gudetama
 if [[ -z "$BASH_ENV" ]]
 then

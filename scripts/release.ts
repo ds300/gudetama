@@ -110,32 +110,29 @@ async function release() {
   log.substep(`install.sh.gz`)
 
   writeFileSync('install.sh', createInstallScript({ releaseTag }))
-  execSync(`gzip -f install.sh`, { stdio: 'inherit' })
   await gh.repos.uploadReleaseAsset({
     repo: 'gudetama',
     owner: 'artsy',
     release_id: releaseResponse.data.id,
-    data: readFileSync('install.sh.gz') as any,
-    name: 'install.sh.gz',
+    data: readFileSync('install.sh') as any,
+    name: 'install.sh',
     headers: {
       'content-type': 'application/octet-stream',
-      'content-length': statSync('install.sh.gz').size,
+      'content-length': statSync('install.sh').size,
     },
   })
 
   log.substep(`gudetama.${releaseTag}.js`)
   execSync(`yarn build-bundle`, { stdio: 'inherit' })
-
-  execSync(`gzip -f gudetama.${releaseTag}.js`, { stdio: 'inherit' })
   await gh.repos.uploadReleaseAsset({
     repo: 'gudetama',
     owner: 'artsy',
     release_id: releaseResponse.data.id,
-    data: readFileSync(`gudetama.${releaseTag}.js.gz`) as any,
-    name: `gudetama.${releaseTag}.js.gz`,
+    data: readFileSync(`gudetama.${releaseTag}.js`) as any,
+    name: `gudetama.${releaseTag}.js`,
     headers: {
       'content-type': 'application/octet-stream',
-      'content-length': statSync(`gudetama.${releaseTag}.js.gz`).size,
+      'content-length': statSync(`gudetama.${releaseTag}.js`).size,
     },
   })
 
