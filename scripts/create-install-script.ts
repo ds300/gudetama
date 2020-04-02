@@ -1,6 +1,6 @@
 export function createInstallScript({ releaseTag }: { releaseTag: string }) {
   return `
-  set -e
+set -e
 mkdir -p ~/.gudetama/bin
 curl -s -L https://github.com/artsy/gudetama/releases/download/${releaseTag}/gudetama.${releaseTag}.js > ~/.gudetama/bin/gudetama
 chmod +x ~/.gudetama/bin/gudetama

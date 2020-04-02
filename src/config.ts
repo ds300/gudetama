@@ -8,6 +8,9 @@ import { hashString } from './manifest/hash'
 import stableStringify from 'fast-json-stable-stringify'
 
 import type { ConfigFile } from '@artsy/gudetama'
+import { FSBackend } from './store/FSBackend'
+
+import isCi from 'is-ci'
 
 function getCurrentBranch() {
   try {
@@ -53,7 +56,7 @@ function loadConfig(): Required<ConfigFile> {
     primaryBranch: userConfig.primaryBranch || 'master',
     manifestDir: '.gudetama-manifests',
     getCacheBackend() {
-      return new S3StoreBackend()
+      return isCi ? new S3StoreBackend() : new FSBackend()
     },
     ...userConfig,
   }
