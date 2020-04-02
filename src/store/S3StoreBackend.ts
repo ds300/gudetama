@@ -1,10 +1,10 @@
 import fs from 'fs'
 import https from 'https'
 import crypto from 'crypto'
-import { GudetamaStoreBackend } from './GudetamaStore'
 import { hashFile, hashString } from '../manifest/hash'
 import chalk from 'chalk'
 import { log } from '../log'
+import type { CacheBackend } from '@artsy/gudetama'
 
 export interface S3Config {
   accessKeyId: string
@@ -13,7 +13,7 @@ export interface S3Config {
   region: string
 }
 
-export class S3StoreBackend implements GudetamaStoreBackend {
+export class S3StoreBackend implements CacheBackend {
   constructor(public config: S3Config = defaultConfig) {
     if (Object.values(config).some((x) => !x)) {
       log.fail('S3 config vars not found')

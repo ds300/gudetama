@@ -6,3 +6,4 @@ dist
 .test
 install.sh
 dist.js
+lib

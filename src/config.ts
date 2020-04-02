@@ -1,4 +1,3 @@
-import { GudetamaStoreBackend } from './store/GudetamaStore'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
@@ -8,38 +7,7 @@ import { S3StoreBackend } from './store/S3StoreBackend'
 import { hashString } from './manifest/hash'
 import stableStringify from 'fast-json-stable-stringify'
 
-export interface InputFiles {
-  extends?: string[]
-  include?: string[]
-  exclude?: string[]
-}
-
-export interface Step {
-  inputFiles?: InputFiles
-  inputCommands?: string[]
-  outputFiles?: string[]
-  caches?: string[]
-  command?: string
-  branches?: {
-    only?: string[]
-    always?: string[]
-    never?: string[]
-  }
-}
-
-export interface Steps {
-  [step_name: string]: Step
-}
-
-export interface ConfigFile {
-  repoID: string
-  cacheVersion: number
-  steps: Steps
-  getCacheBackend?(): GudetamaStoreBackend
-  currentBranch?: string
-  primaryBranch?: string
-  manifestDir?: string
-}
+import type { ConfigFile } from '@artsy/gudetama'
 
 function getCurrentBranch() {
   try {

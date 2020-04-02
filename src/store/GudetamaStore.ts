@@ -8,13 +8,9 @@ import { getStepKey, config, getManifestPath, getArchivePaths } from '../config'
 import { hashFile } from '../manifest/hash'
 import chalk from 'chalk'
 import { exec } from '../exec'
+import type { CacheBackend } from '@artsy/gudetama'
 
 const INDEX_VERSION = 0
-
-export interface GudetamaStoreBackend {
-  getObject(key: string, path: string): Promise<boolean>
-  putObject(key: string, path: string): Promise<void>
-}
 
 type ObjectType = 'cache' | 'persistent_cache' | 'artifact' | 'manifest'
 
@@ -32,7 +28,7 @@ interface StepIndex {
 
 export class GudetamaStore {
   private tmpdir: string
-  constructor(public cache: GudetamaStoreBackend = new S3StoreBackend()) {
+  constructor(public cache: CacheBackend = new S3StoreBackend()) {
     this.tmpdir = fs.mkdtempSync(
       path.join(process.env.TMPDIR || '/tmp', 'gudetama-')
     )

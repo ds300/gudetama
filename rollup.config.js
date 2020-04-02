@@ -11,7 +11,7 @@ export default {
   },
   plugins: [
     typescript(),
-    resolve({ jsnext: true, preferBuiltins: true }),
+    resolve({ preferBuiltins: true }),
     commonjs(),
     json(),
   ],

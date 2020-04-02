@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * @type {import('./src/config').ConfigFile}
+ * @type {import('@artsy/gudetama').ConfigFile}
  */
 const config = {
   repoID: 'gudetama',

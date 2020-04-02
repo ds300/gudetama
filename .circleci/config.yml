@@ -11,10 +11,9 @@ jobs:
       - run:
           name: install gudetama
           command: |
-            # the_install_command_is_on_the_next_line
-            curl -s https://raw.githubusercontent.com/artsy/gudetama/7c07020ad8c616d50f187abd7d023e593d5b69a0/install.sh | source /dev/stdin
+            # curl -s https://github.com/artsy/gudetama/releases/download/v1.0.0-0/install.sh.gz | gunzip | source /dev/stdin
       - queue/until_front_of_line:
-          time: "2" # how long a queue will wait until the job exits
+          time: '2' # how long a queue will wait until the job exits
           only-on-branch: master # restrict queueing to a specific branch (default *)
           consider-job: false # block whole workflow if any job still running
       - add_ssh_keys:
@@ -23,15 +22,23 @@ jobs:
       - checkout
       - run:
           name: install node_modules
-          command: gudetama run-if-needed install_node_modules
+          # command: gudetama run-if-needed install_node_modules
+          command: yarn install
       - run:
-          name: deploy
-          command: ./scripts/deploy.sh
+          name: type check
+          command: yarn tsc
+      - run:
+          name: build
+          command: yarn build-npm && yarn build-bundle
+      - run:
+          name: release
+          command: yarn release
 
 workflows:
   deploy:
     jobs:
       - deploy:
+          context: npm-deploy
           filters:
             branches:
               only:
