@@ -9,6 +9,8 @@ import { hashFile } from '../manifest/hash'
 import chalk from 'chalk'
 import { exec } from '../exec'
 import type { CacheBackend } from '@artsy/gudetama'
+import { spawn } from 'child_process'
+import glob from 'glob'
 
 const INDEX_VERSION = 0
 
@@ -235,8 +237,43 @@ export class GudetamaStore {
     })
     const tarballPath = path.join(this.tmpdir, objectKey)
 
+    const files = new Set<string>()
+
+    for (const path of paths) {
+      for (const match of glob.sync(path)) {
+        files.add(match)
+      }
+    }
+
     await log.timedSubstep(`Creating archive of [${paths.join(', ')}]`, () => {
-      exec('tar', ['cf', tarballPath, ...paths])
+      if (files.size < 2000) {
+        exec('tar', ['cf', tarballPath, ...files])
+        return Promise.resolve()
+      } else {
+        return new Promise((resolve) => {
+          const proc = spawn('tar', ['cf', tarballPath, '-T', '-'])
+          let stderr = ''
+          proc.stderr.on('data', (buf) => {
+            stderr += buf.toString()
+          })
+          proc.on('error', (error) => {
+            log.fail('Could not create tarball', { error, detail: stderr })
+          })
+          proc.on('exit', (status) => {
+            if (status !== 0) {
+              log.fail(`Could not create tarball. Status ${status}`, {
+                detail: stderr,
+              })
+            } else {
+              resolve()
+            }
+          })
+          for (const path of files) {
+            proc.stdin.write(path + '\n')
+          }
+          proc.stdin.end()
+        })
+      }
     })
 
     await this.persistObject({

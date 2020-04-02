@@ -9,7 +9,8 @@ export function exec(...args: Parameters<typeof spawnSync>) {
         .concat(args[1] ?? [])
         .join(' ')}`,
       {
-        detail: result.stderr.toString(),
+        detail: result.stderr?.toString(),
+        error: result.error
       }
     )
   }

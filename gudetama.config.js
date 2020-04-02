@@ -23,7 +23,7 @@ const config = {
       inputFiles: {
         include: ['package.json'],
       },
-      outputFiles: ['.test'],
+      outputFiles: ['node_modules'],
       inputCommands: ['yarn --version', 'node --version'],
       branches: {
         never: ['jussie smolet'],
