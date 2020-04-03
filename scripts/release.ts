@@ -123,7 +123,6 @@ async function release() {
   })
 
   log.substep(`gudetama.${releaseTag}.js`)
-  execSync(`yarn build-bundle`, { stdio: 'inherit' })
   await gh.repos.uploadReleaseAsset({
     repo: 'gudetama',
     owner: 'artsy',
