@@ -9,7 +9,7 @@ const config = {
     install_node_modules: {
       command: 'yarn',
       inputFiles: {
-        include: ['yarn.lock'],
+        include: ['yarn.lock', 'package.json'],
       },
       outputFiles: ['node_modules'],
     },
@@ -23,7 +23,7 @@ const config = {
       inputFiles: {
         include: ['package.json'],
       },
-      outputFiles: ['node_modules'],
+      outputFiles: ['node_modules/lodash'],
       inputCommands: ['yarn --version', 'node --version'],
       branches: {
         never: ['jussie smolet'],

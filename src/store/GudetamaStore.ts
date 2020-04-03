@@ -12,14 +12,15 @@ import type { CacheBackend } from '@artsy/gudetama'
 import { spawn } from 'child_process'
 import glob from 'glob'
 
-const INDEX_VERSION = 0
+export const INDEX_VERSION = 0
 
-type ObjectType = 'cache' | 'persistent_cache' | 'artifact' | 'manifest'
+export type ObjectType = 'cache' | 'persistent_cache' | 'artifact' | 'manifest'
 
-interface StepIndex {
-  version: number
+export interface StepIndex {
+  version: 0
   objects: Array<{
     key: string
+    lastAccessedDate: string
     creationDate: string
     size: number
     type: ObjectType
@@ -95,9 +96,7 @@ export class GudetamaStore {
       index = this.updateQueue.shift()?.(index) || index
     }
     // TODO: prune index
-    await log.timedSubstep('Updating index', () =>
-      this.saveIndex({ stepName, index })
-    )
+    await this.saveIndex({ stepName, index })
   }
 
   private addToIndex({
@@ -118,7 +117,10 @@ export class GudetamaStore {
         index.objects.push({
           branch: config.currentBranch,
           type: objectType,
+          // time zone doesn't matter too much here,
+          // we only use these for sorting and cache pruning
           creationDate: new Date().toISOString(),
+          lastAccessedDate: new Date().toISOString(),
           key: objectKey,
           size,
           commit: exec('git', ['rev-parse', 'HEAD']).trim(),
@@ -170,7 +172,9 @@ export class GudetamaStore {
       currentManifestHash,
     })
 
-    await this.commitIndexUpdates({ stepName })
+    await log.timedSubstep('Updating index', () =>
+      this.commitIndexUpdates({ stepName })
+    )
   }
 
   private getObjectKey({
@@ -284,6 +288,33 @@ export class GudetamaStore {
     })
   }
 
+  async getObjectUpdatingIndex({
+    stepName,
+    objectKey,
+    destinationPath,
+  }: {
+    stepName: string
+    objectKey: string
+    destinationPath: string
+  }) {
+    if (await this.cache.getObject(objectKey, destinationPath)) {
+      this.updateIndex({
+        updater: (index) => {
+          const match = index.objects.find((o) => o.key === objectKey)
+          if (match) {
+            match.lastAccessedDate = new Date().toISOString()
+          } else {
+            // _shrug_ must've been a race condition. This object will be GC'd by
+            // the prune script.
+          }
+        },
+      })
+      await this.commitIndexUpdates({ stepName })
+      return true
+    }
+    return false
+  }
+
   async restoreManifest({
     stepName,
   }: {
@@ -313,7 +344,13 @@ export class GudetamaStore {
       objectType: 'manifest',
     })
 
-    if (await this.cache.getObject(exactMatchObjectKey, previousManifestPath)) {
+    if (
+      await this.getObjectUpdatingIndex({
+        objectKey: exactMatchObjectKey,
+        destinationPath: previousManifestPath,
+        stepName,
+      })
+    ) {
       return { type: 'exact' }
     }
 
@@ -329,7 +366,11 @@ export class GudetamaStore {
     ]) {
       if (
         match &&
-        (await this.cache.getObject(match.key, previousManifestPath))
+        (await this.getObjectUpdatingIndex({
+          objectKey: match.key,
+          destinationPath: previousManifestPath,
+          stepName,
+        }))
       ) {
         process.env.GUDETAMA_PREVIOUS_SUCCESS_COMMIT = match.commit
         return {
@@ -372,7 +413,11 @@ export class GudetamaStore {
               match.branch
             )} (${prettyBytes(match.size)})`,
             () =>
-              this.cache.getObject(match.key, path.join(this.tmpdir, match.key))
+              this.getObjectUpdatingIndex({
+                objectKey: match.key,
+                destinationPath: path.join(this.tmpdir, match.key),
+                stepName,
+              })
           ))
         ) {
           log.timedSubstep(`Success! Unarchiving`, () => {
@@ -406,7 +451,11 @@ export class GudetamaStore {
               match.branch
             )} (${prettyBytes(match.size)})`,
             () =>
-              this.cache.getObject(match.key, path.join(this.tmpdir, match.key))
+              this.getObjectUpdatingIndex({
+                objectKey: match.key,
+                destinationPath: path.join(this.tmpdir, match.key),
+                stepName,
+              })
           ))
         ) {
           log.timedSubstep(`Success! Unarchiving`, () => {
@@ -445,7 +494,12 @@ export class GudetamaStore {
           `Fetching archive of [${persistentCachePaths.join(
             ', '
           )}]${sizeString}`,
-          () => this.cache.getObject(objectKey, tarballPath)
+          () =>
+            this.getObjectUpdatingIndex({
+              objectKey,
+              destinationPath: tarballPath,
+              stepName,
+            })
         )
       ) {
         await log.timedSubstep('Unarchiving', () => {
@@ -469,7 +523,12 @@ export class GudetamaStore {
       if (
         await log.timedSubstep(
           `Fetching archive of [${artifactPaths.join(', ')}]${sizeString}`,
-          () => this.cache.getObject(objectKey, tarballPath)
+          () =>
+            this.getObjectUpdatingIndex({
+              objectKey,
+              destinationPath: tarballPath,
+              stepName,
+            })
         )
       ) {
         await log.timedSubstep('Unarchiving', () => {
