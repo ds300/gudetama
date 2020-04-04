@@ -11,7 +11,7 @@ jobs:
       - run:
           name: install gudetama
           command: |
-            curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-11/install.sh | source /dev/stdin
+            curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-12/install.sh | source /dev/stdin
       - queue/until_front_of_line:
           time: '2' # how long a queue will wait until the job exits
           only-on-branch: master # restrict queueing to a specific branch (default *)
