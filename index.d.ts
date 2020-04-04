@@ -23,8 +23,10 @@ declare module '@artsy/gudetama' {
   }
 
   export interface CacheBackend {
-    getObject(key: string, path: string): Promise<boolean>
-    putObject(key: string, path: string): Promise<void>
+    getObject(objectKey: string, destinationPath: string): Promise<boolean>
+    putObject(objectKey: string, sourcePath: string): Promise<void>
+    listAllObjects?(): Promise<Array<{ key: string; size: number }>>
+    deleteObject?(objectKey: string): Promise<void>
   }
 
   export interface ConfigFile {

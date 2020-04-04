@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { getManifestPath } from '../config'
-import chalk from 'chalk'
+import { cyan, bold, red, green } from 'kleur'
 
 export function compareManifests({
   stepName,
@@ -29,17 +29,17 @@ export function compareManifests({
       i++
       j++
       if (previousHash !== currentHash) {
-        changes.push(chalk.cyan(`${chalk.bold(currentThing)} is different`))
+        changes.push(cyan(`${bold(currentThing)} is different`))
       }
     } else if (
       previousThing < currentThing ||
       (previousThing && !currentThing)
     ) {
       i++
-      changes.push(chalk.red(`${chalk.bold(previousThing)} was removed`))
+      changes.push(red(`${bold(previousThing)} was removed`))
     } else {
       j++
-      changes.push(chalk.green(`${chalk.bold(currentThing)} was added`))
+      changes.push(green(`${bold(currentThing)} was added`))
     }
   }
 

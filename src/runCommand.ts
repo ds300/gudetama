@@ -2,13 +2,13 @@ import { spawnSync } from 'child_process'
 import { store } from './store/store'
 import { getStep } from './config'
 import { log } from './log'
-import chalk from 'chalk'
+import { green, gray, cyan } from 'kleur'
 
 export async function runCommand({ stepName }: { stepName: string }) {
   await store.restoreCaches({ stepName })
   const step = getStep({ stepName })
   const command = step.command || stepName
-  log.step(chalk.greenBright.bold(command))
+  log.step(green().bold(command))
   const start = Date.now()
   const result = spawnSync(command, { stdio: 'inherit', shell: true })
   if (result.status != 0) {
@@ -21,9 +21,7 @@ export async function runCommand({ stepName }: { stepName: string }) {
       }
     )
   }
-  console.log(chalk.gray(`\n              ∙  ∙  ∙\n`))
-  log.step(
-    `Done in ${chalk.cyan(((Date.now() - start) / 1000).toFixed(2) + 's')}`
-  )
+  console.log(gray(`\n              ∙  ∙  ∙\n`))
+  log.step(`Done in ${cyan(((Date.now() - start) / 1000).toFixed(2) + 's')}`)
   await store.save({ stepName })
 }

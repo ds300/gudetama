@@ -1,4 +1,4 @@
-import chalk from 'chalk'
+import { cyan, grey, red, green, bold } from 'kleur'
 
 function decapitalize(str: string) {
   return str && str[0].toLowerCase() + str.slice(1)
@@ -8,11 +8,11 @@ async function timedStep<T>(
   str: string,
   task: () => T | Promise<T>
 ): Promise<T> {
-  process.stdout.write(chalk.cyan(`• `) + str + '...')
+  process.stdout.write(cyan(`• `) + str + '...')
   const start = Date.now()
   block()
   const done = () => {
-    process.stdout.write(chalk.cyan(' ' + timeSince(start) + '\n'))
+    process.stdout.write(cyan(' ' + timeSince(start) + '\n'))
     release()
   }
   try {
@@ -29,11 +29,11 @@ async function timedSubstep<T>(
   str: string,
   task: () => T | Promise<T>
 ): Promise<T> {
-  process.stdout.write(chalk.grey('  ' + str + '...'))
+  process.stdout.write(grey('  ' + str + '...'))
   const start = Date.now()
   block()
   const done = () => {
-    process.stdout.write(chalk.cyan(' ' + timeSince(start) + '\n'))
+    process.stdout.write(cyan(' ' + timeSince(start) + '\n'))
     release()
   }
   try {
@@ -71,17 +71,15 @@ function queueify<Args extends any[]>(f: (...args: Args) => void) {
 
 export const log = {
   fail(headline: string, more?: { error?: Error; detail?: string }) {
-    console.error(chalk.red.bold('\n\n∙ ERROR ∙'), chalk.redBright(headline))
+    console.error(red().bold('\n\n∙ ERROR ∙'), red(headline))
     more?.detail && console.error('\n' + more.detail)
     more?.error && console.error('\n', more.error)
     process.exit(1)
   },
-  task: (str: string) =>
-    console.log(chalk.green('\n::'), chalk.bold(str), chalk.green('::\n')),
-  step: (str: string) => console.log(chalk.cyan(`•`), str),
-  substep: queueify((str: string) => console.log(chalk.grey('  ' + str))),
-  success: (str: string) =>
-    console.log('\n' + chalk.green(`✔`), chalk.bold(str)),
+  task: (str: string) => console.log(green('\n::'), bold(str), green('::\n')),
+  step: (str: string) => console.log(cyan(`•`), str),
+  substep: queueify((str: string) => console.log(grey('  ' + str))),
+  success: (str: string) => console.log('\n' + green(`✔`), bold(str)),
   info: (str: string) => console.log('💡', str),
   timedStep,
   timedSubstep,

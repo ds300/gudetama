@@ -6,11 +6,11 @@ import { log } from '../log'
 import prettyBytes from 'pretty-bytes'
 import { getStepKey, config, getManifestPath, getArchivePaths } from '../config'
 import { hashFile } from '../manifest/hash'
-import chalk from 'chalk'
 import { exec } from '../exec'
 import type { CacheBackend } from '@artsy/gudetama'
 import { spawn } from 'child_process'
 import glob from 'glob'
+import { bold } from 'kleur'
 
 export const INDEX_VERSION = 0
 
@@ -409,9 +409,9 @@ export class GudetamaStore {
           (await log.timedSubstep(
             `Attempting to fetch cache of [${persistentCachePaths.join(
               ', '
-            )}] from previous build on ${chalk.bold(
-              match.branch
-            )} (${prettyBytes(match.size)})`,
+            )}] from previous build on ${bold(match.branch)} (${prettyBytes(
+              match.size
+            )})`,
             () =>
               this.getObjectUpdatingIndex({
                 objectKey: match.key,
@@ -447,9 +447,9 @@ export class GudetamaStore {
           (await log.timedSubstep(
             `Attempting to fetch cache of [${cachePaths.join(
               ', '
-            )}] from previous build on ${chalk.bold(
-              match.branch
-            )} (${prettyBytes(match.size)})`,
+            )}] from previous build on ${bold(match.branch)} (${prettyBytes(
+              match.size
+            )})`,
             () =>
               this.getObjectUpdatingIndex({
                 objectKey: match.key,

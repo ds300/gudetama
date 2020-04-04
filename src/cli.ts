@@ -2,44 +2,44 @@ import { compareManifests } from './manifest/compareManifests'
 import { writeManifest } from './manifest/writeManifest'
 import { getManifestPath, getStep, config } from './config'
 import { runCommand } from './runCommand'
-import chalk from 'chalk'
 import { log } from './log'
 import { store } from './store/store'
 import { version } from '../package.json'
+import { gray, bold, cyan } from 'kleur'
 
 function required(name: string) {
-  return chalk.gray('<') + name + chalk.gray('>')
+  return gray('<') + name + gray('>')
 }
 
 function printHelp() {
   console.log(`USAGE
 
-  ${chalk.bold('gudetama')} ${required('command')} [...args]
+  ${bold('gudetama')} ${required('command')} [...args]
 
 COMMANDS
 
-  ${chalk.bold('run-if-needed')} ${required('step name')}
+  ${bold('run-if-needed')} ${required('step name')}
     Runs the given step if the input files specified in the config
     have changed, unless overridden by branch rules.
 
-  ${chalk.bold('run')} ${required('step name')}
+  ${bold('run')} ${required('step name')}
     Runs the given step regardless of whether the input files changed,
     unless overriden by branch rules.
 
-  ${chalk.bold('write-manifest')} ${required('name')}
+  ${bold('write-manifest')} ${required('name')}
     Generates the manifest file with the given name.
 `)
 }
 
 const renderStepName = ({ stepName }: { stepName: string }) =>
-  `${chalk.gray("'")}${stepName}${chalk.gray("'")}`
+  `${gray("'")}${stepName}${gray("'")}`
 
 async function run([command, stepName]: string[]) {
   if (command.match(/^(-v|--version)$/)) {
     console.log(version)
     process.exit()
   }
-  console.log(`${chalk.bold('gudetama')} ${version}`)
+  console.log(`${bold('gudetama')} ${version}`)
 
   switch (command) {
     case 'run-if-needed':
@@ -52,7 +52,7 @@ async function run([command, stepName]: string[]) {
         log.task(
           `Skipping ${renderStepName({
             stepName,
-          })} because this is the ${chalk.cyan(config.currentBranch)} branch`
+          })} because this is the ${cyan(config.currentBranch)} branch`
         )
         return
       }
@@ -61,7 +61,7 @@ async function run([command, stepName]: string[]) {
         const done = log.timedTask(
           `Running ${renderStepName({
             stepName,
-          })} because this is the ${chalk.cyan(config.currentBranch)} branch`
+          })} because this is the ${cyan(config.currentBranch)} branch`
         )
         await runCommand({ stepName })
         done('Finished')
@@ -73,7 +73,7 @@ async function run([command, stepName]: string[]) {
       )
       const currentManifestPath = getManifestPath({ stepName })
       await log.timedStep(
-        `Computing manifest file ${chalk.bold(currentManifestPath)}`,
+        `Computing manifest file ${bold(currentManifestPath)}`,
         () => writeManifest({ stepName })
       )
 
@@ -91,7 +91,7 @@ async function run([command, stepName]: string[]) {
           break
         case 'partial':
           log.step(
-            `Comparing against a previous successful build on ${chalk.bold(
+            `Comparing against a previous successful build on ${bold(
               result.previousManifestBranch
             )}`
           )
