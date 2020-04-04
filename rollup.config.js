@@ -10,9 +10,14 @@ export default {
     format: 'cjs',
   },
   plugins: [
+    commonjs({
+      namedExports: {
+        'kleur': Object.keys(require('kleur')),
+        'aws4': Object.keys(require('aws4')),
+      }
+    }),
     typescript(),
     resolve({ preferBuiltins: true }),
-    commonjs(),
     json(),
   ],
   external: [...require('module').builtinModules]
