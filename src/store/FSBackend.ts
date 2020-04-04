@@ -7,14 +7,34 @@ export class FSBackend implements CacheBackend {
   constructor() {
     fs.mkdirsSync(this.cachePath)
   }
-  async getObject(key: string, path: string): Promise<boolean> {
-    if (fs.existsSync(join(this.cachePath, key))) {
-      fs.copyFileSync(join(this.cachePath, key), path)
+  async getObject(
+    objectKey: string,
+    destinationPath: string
+  ): Promise<boolean> {
+    if (fs.existsSync(join(this.cachePath, objectKey))) {
+      fs.copyFileSync(join(this.cachePath, objectKey), destinationPath)
       return true
     }
     return false
   }
-  async putObject(key: string, path: string): Promise<void> {
-    fs.copyFileSync(path, join(this.cachePath, key))
+  async putObject(objectKey: string, sourcePath: string): Promise<void> {
+    fs.copyFileSync(sourcePath, join(this.cachePath, objectKey))
+  }
+  async deleteObject(objectKey: string) {
+    if (fs.existsSync(join(this.cachePath, objectKey))) {
+      fs.unlinkSync(join(this.cachePath, objectKey))
+    }
+  }
+  async listAllObjects() {
+    const result: Array<{ key: string; size: number }> = []
+
+    for (const objectKey in fs.readdirSync(this.cachePath)) {
+      const stat = fs.statSync(objectKey)
+      if (stat.isFile()) {
+        result.push({ key: objectKey, size: stat.size })
+      }
+    }
+
+    return result
   }
 }
