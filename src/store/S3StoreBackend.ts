@@ -5,8 +5,8 @@ import { log } from '../log'
 import type { CacheBackend } from '@artsy/gudetama'
 import { sign } from 'aws4'
 import { red } from 'kleur'
-import sax from 'sax'
 import { encode } from 'querystring'
+import { parseXML } from './parseXML'
 
 export interface S3Config {
   accessKeyId: string
@@ -23,7 +23,7 @@ export class S3StoreBackend implements CacheBackend {
   }
 
   signedRequest(props: {
-    method: 'GET' | 'PUT'
+    method: 'GET' | 'PUT' | 'DELETE'
     path: string
     headers: object
   }) {
@@ -172,84 +172,53 @@ export class S3StoreBackend implements CacheBackend {
       req.end()
     })
 
-    let nextContinuationToken: string | null = null
-    await new Promise((resolve, reject) => {
-      let state:
-        | 'reading continuation token'
-        | 'reading object'
-        | 'reading size'
-        | 'reading key'
-        | null = null
-      let nextObject: { key?: string; size?: number } = {}
+    interface Content {
+      Key: string
+      Size: string
+    }
 
-      const parser = sax.parser(false)
+    interface Response {
+      Contents: Content[]
+      NextContinuationToken?: string
+    }
 
-      parser.onerror = reject
-      parser.ontext = (text) => {
-        switch (state) {
-          case 'reading object':
-            break
-          case 'reading continuation token':
-            nextContinuationToken = text
-            break
-          case 'reading key':
-            nextObject.key = text
-            break
-          case 'reading size':
-            nextObject.size = Number(text)
-            break
-        }
-      }
-      parser.onopentag = (node) => {
-        switch (node.name) {
-          case 'NEXTCONTINUATIONTOKEN':
-            if (state !== null) log.fail('invalid parser state 0')
-            state = 'reading continuation token'
-            break
-          case 'CONTENTS':
-            if (state !== null) log.fail('Invalid parser state 1')
-            state = 'reading object'
-            nextObject = {}
-            break
-          case 'KEY':
-            if (state === 'reading object') {
-              state = 'reading key'
-            }
-            break
-          case 'SIZE':
-            if (state === 'reading object') {
-              state = 'reading size'
-            }
-            break
-        }
-      }
-      parser.onclosetag = (tagName) => {
-        switch (tagName) {
-          case 'NEXTCONTINUATIONTOKEN':
-            state = null
-            break
-          case 'CONTENTS':
-            state = null
-            result.push(nextObject as any)
-            break
-          case 'KEY':
-            state = 'reading object'
-            break
-          case 'SIZE':
-            state = 'reading object'
-            break
-        }
-      }
-      parser.onend = resolve
+    const response: Response = await parseXML(body)
 
-      parser.write(body).close()
-    })
+    for (const { Key, Size } of response.Contents) {
+      result.push({ key: Key, size: Number(Size) })
+    }
 
-    if (nextContinuationToken) {
-      return [...result, ...(await this.listAllObjects(nextContinuationToken))]
+    if (response.NextContinuationToken) {
+      return [
+        ...result,
+        ...(await this.listAllObjects(response.NextContinuationToken)),
+      ]
     }
 
     return result
+  }
+
+  async deleteObject(objectKey: string) {
+    const req = this.signedRequest({
+      method: 'DELETE',
+      path: `/${objectKey}`,
+      headers: {
+        'x-amz-request-payer': 'requester',
+      },
+    })
+
+    await new Promise((resolve, reject) => {
+      req.on('error', reject)
+      req.on('response', (res) => {
+        res.on('error', reject)
+        if (res.statusCode! >= 300) {
+          log.fail(`Couldn't delete object, got status ${res.statusCode}`)
+        } else {
+          resolve()
+        }
+      })
+      req.end()
+    })
   }
 }
 
