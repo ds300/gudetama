@@ -1,6 +1,6 @@
 import { log } from '../src/log'
 import { parse } from 'semver'
-import { writeFileSync, readFileSync, statSync } from 'fs-extra'
+import { writeFileSync, readFileSync, statSync } from 'fs'
 import { execSync } from 'child_process'
 import { Octokit } from '@octokit/rest'
 import { createInstallScript } from './create-install-script'

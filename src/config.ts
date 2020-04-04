@@ -11,6 +11,7 @@ import type { ConfigFile } from '@artsy/gudetama'
 import { FSBackend } from './store/FSBackend'
 
 import isCi from 'is-ci'
+import { gray } from 'kleur'
 
 function getCurrentBranch() {
   try {
@@ -106,3 +107,26 @@ export function getStepKey({ stepName }: { stepName: string }) {
 export function getManifestPath({ stepName }: { stepName: string }) {
   return path.join(config.manifestDir, slugify(stepName))
 }
+
+export function shouldRunStepOnCurrentBranch({
+  stepName,
+}: {
+  stepName: string
+}): 'maybe' | 'no' | 'always' {
+  const step = getStep({ stepName })
+  if (
+    step.branches?.never?.includes(config.currentBranch) ||
+    (step.branches?.only && !step.branches.only.includes(config.currentBranch))
+  ) {
+    return 'no'
+  }
+
+  if (step.branches?.always?.includes(config.currentBranch)) {
+    return 'always'
+  }
+
+  return 'maybe'
+}
+
+export const renderStepName = ({ stepName }: { stepName: string }) =>
+  `${gray("'")}${stepName}${gray("'")}`

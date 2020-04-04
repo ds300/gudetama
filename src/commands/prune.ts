@@ -1,7 +1,10 @@
-import { S3 } from 'aws-sdk'
-import { log } from '../src/log'
-import { StepIndex } from '../src/store/GudetamaStore'
+import { log } from '../log'
+import { StepIndex } from '../store/GudetamaStore'
 import prettyBytes from 'pretty-bytes'
+import { store } from '../store/store'
+import { mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { join } from 'path'
+import rimraf from 'rimraf'
 
 const maxObjectLifetime =
   Number(process.env.MAX_OBJECT_LIFETIME_DAYS || '7') * 24 * 60 * 60 * 1000
@@ -12,41 +15,22 @@ function isTooOld(obj: ObjectData) {
   )
 }
 
-const client = new S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-})
-
-const Bucket = process.env.AWS_S3_BUCKET!
-
-async function getAllObjects(): Promise<Array<{ key: string; size: number }>> {
-  const allObjectKeys: Array<{ key: string; size: number }> = []
-  const getObjectKeys = async (ContinuationToken?: string) => {
-    const result = await client
-      .listObjectsV2({
-        Bucket,
-        ContinuationToken,
-      })
-      .promise()
-    result.Contents?.forEach(({ Key, Size }) =>
-      allObjectKeys.push({ key: Key!, size: Size! })
-    )
-    if (result.NextContinuationToken) {
-      await getObjectKeys(result.NextContinuationToken)
-    }
-  }
-  await getObjectKeys()
-  return allObjectKeys
-}
-
 type ObjectData = StepIndex['objects'][0]
 
-async function run() {
+export async function prune() {
+  if (!store.cache.listAllObjects || !store.cache.deleteObject) {
+    log.fail(
+      'In order to use the `prune` command your object store must implement both `listAllObjects` and `deleteObject`'
+    )
+  }
+  const tmpdir = join(process.env.TMPDIR || '/tmp', 'gudetama-prune')
+  mkdirSync(tmpdir)
+
   try {
     const done = log.timedTask('Pruning gudetama cache')
 
     const allObjects = await log.timedStep('Getting all object keys', () =>
-      getAllObjects()
+      store.cache.listAllObjects!()
     )
 
     const liveObjects: ObjectData[] = []
@@ -58,10 +42,13 @@ async function run() {
       'Pruning indexes and identifying objects to remove',
       async () => {
         for (const { key: indexKey } of indexes) {
-          const result = await client
-            .getObject({ Key: indexKey, Bucket })
-            .promise()
-          const index = JSON.parse(result.Body?.toString() || '{}') as StepIndex
+          const indexPath = join(tmpdir, 'index.json')
+          if (!(await store.cache.getObject(indexKey, indexPath))) {
+            continue
+          }
+          const index = JSON.parse(
+            readFileSync(indexPath).toString()
+          ) as StepIndex
 
           // remove object keys that are not in the store
           index.objects = index.objects.filter(({ key }) =>
@@ -79,15 +66,10 @@ async function run() {
 
           if (index.objects.length === 0) {
             log.substep(`Removing index ${indexKey}`)
-            await client.deleteObject({ Bucket, Key: indexKey }).promise()
+            await store.cache.deleteObject!(indexKey)
           } else {
-            await client
-              .putObject({
-                Bucket,
-                Key: indexKey,
-                Body: JSON.stringify(index, null, '  '),
-              })
-              .promise()
+            writeFileSync(indexPath, JSON.stringify(index, null, '  '))
+            await store.cache.putObject(indexKey, indexPath)
           }
         }
       }
@@ -115,14 +97,9 @@ async function run() {
           byesToDelete
         )})`,
         async () => {
-          await client
-            .deleteObjects({
-              Bucket,
-              Delete: {
-                Objects: allDeadObjects.map(({ key }) => ({ Key: key })),
-              },
-            })
-            .promise()
+          for (const object of allDeadObjects) {
+            await store.cache.deleteObject!(object.key)
+          }
         }
       )
     } else {
@@ -132,7 +109,7 @@ async function run() {
     done('Finished')
   } catch (error) {
     log.fail('Cache prune failed', { error })
+  } finally {
+    rimraf.sync(tmpdir)
   }
 }
-
-run()
