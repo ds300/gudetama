@@ -44,7 +44,8 @@
     "is-ci": "^2.0.0",
     "kleur": "^3.0.3",
     "pretty-bytes": "^5.3.0",
-    "rimraf": "^3.0.2"
+    "rimraf": "^3.0.2",
+    "sax": "^1.2.4"
   },
   "devDependencies": {
     "@artsy/auto-config": "^1.0.2",
@@ -65,6 +66,7 @@
     "@types/is-ci": "^2.0.0",
     "@types/node": "^13.7.7",
     "@types/rimraf": "^3.0.0",
+    "@types/sax": "^1.2.1",
     "@types/semver": "^7.1.0",
     "babel-jest": "^25.2.6",
     "jest": "^25.2.7",

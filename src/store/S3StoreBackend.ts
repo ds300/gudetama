@@ -5,6 +5,8 @@ import { log } from '../log'
 import type { CacheBackend } from '@artsy/gudetama'
 import { sign } from 'aws4'
 import { red } from 'kleur'
+import sax from 'sax'
+import { encode } from 'querystring'
 
 export interface S3Config {
   accessKeyId: string
@@ -126,6 +128,128 @@ export class S3StoreBackend implements CacheBackend {
         res.on('error', reject)
       })
     })
+  }
+
+  async listAllObjects(
+    continuationToken?: string
+  ): Promise<Array<{ key: string; size: number }>> {
+    const result: Array<{ key: string; size: number }> = []
+    const req = this.signedRequest({
+      method: 'GET',
+      path:
+        `/?list-type=2&` +
+        encode({
+          'max-keys': 1000,
+          ...(continuationToken
+            ? { 'continuation-token': continuationToken }
+            : {}),
+        }),
+      headers: {
+        'x-amz-request-payer': 'requester',
+      },
+    })
+
+    let body = ''
+
+    await new Promise((resolve, reject) => {
+      req.on('error', reject)
+      req.on('response', (res) => {
+        res.on('error', reject)
+
+        res.on('data', (buf) => {
+          body += buf.toString()
+        })
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            log.fail('Error listing objects. Http code: ' + res.statusCode, {
+              detail: body,
+            })
+          } else {
+            resolve()
+          }
+        })
+      })
+      req.end()
+    })
+
+    let nextContinuationToken: string | null = null
+    await new Promise((resolve, reject) => {
+      let state:
+        | 'reading continuation token'
+        | 'reading object'
+        | 'reading size'
+        | 'reading key'
+        | null = null
+      let nextObject: { key?: string; size?: number } = {}
+
+      const parser = sax.parser(false)
+
+      parser.onerror = reject
+      parser.ontext = (text) => {
+        switch (state) {
+          case 'reading object':
+            break
+          case 'reading continuation token':
+            nextContinuationToken = text
+            break
+          case 'reading key':
+            nextObject.key = text
+            break
+          case 'reading size':
+            nextObject.size = Number(text)
+            break
+        }
+      }
+      parser.onopentag = (node) => {
+        switch (node.name) {
+          case 'NEXTCONTINUATIONTOKEN':
+            if (state !== null) log.fail('invalid parser state 0')
+            state = 'reading continuation token'
+            break
+          case 'CONTENTS':
+            if (state !== null) log.fail('Invalid parser state 1')
+            state = 'reading object'
+            nextObject = {}
+            break
+          case 'KEY':
+            if (state === 'reading object') {
+              state = 'reading key'
+            }
+            break
+          case 'SIZE':
+            if (state === 'reading object') {
+              state = 'reading size'
+            }
+            break
+        }
+      }
+      parser.onclosetag = (tagName) => {
+        switch (tagName) {
+          case 'NEXTCONTINUATIONTOKEN':
+            state = null
+            break
+          case 'CONTENTS':
+            state = null
+            result.push(nextObject as any)
+            break
+          case 'KEY':
+            state = 'reading object'
+            break
+          case 'SIZE':
+            state = 'reading object'
+            break
+        }
+      }
+      parser.onend = resolve
+
+      parser.write(body).close()
+    })
+
+    if (nextContinuationToken) {
+      return [...result, ...(await this.listAllObjects(nextContinuationToken))]
+    }
+
+    return result
   }
 }
 
