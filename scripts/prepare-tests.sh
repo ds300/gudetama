@@ -19,9 +19,9 @@ yarn build-npm
 npm version 0.0.0-test --git-tag-version false
 yarn pack
 npm version $current_version --git-tag-version false
-pushd test-bin
+cd test-bin
 yarn init --yes
 yarn add file:../artsy-gudetama-v0.0.0-test.tgz
-popd
+cd ../
 echo 'node node_modules/.bin/gudetama' > test-bin/gudetama-test-npm
 chmod +x test-bin/gudetama-test-npm
