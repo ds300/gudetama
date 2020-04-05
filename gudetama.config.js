@@ -63,15 +63,18 @@ const config = {
       command: './scripts/prepare-tests.sh',
       inputs: {
         extends: ['build-bundle', 'build-npm'],
+        files: {
+          include: ['scripts'],
+        },
       },
-      outputFiles: ['test-bin', 'scripts'],
+      outputFiles: ['test-bin'],
     },
     test: {
       command: 'yarn test',
       inputs: {
         extends: ['prepare-tests'],
         files: {
-          include: ['jest.config.js', 'integration-tests'],
+          include: ['jest.config.js', 'integration-tests', 'src/**/*.test.ts'],
         },
       },
     },
