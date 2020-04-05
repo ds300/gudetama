@@ -17,9 +17,9 @@ commands:
       - run:
           name: |
             Run '<< parameters.step >>' if needed
-          # command: gudetama run-if-needed << parameters.step >>
-          command: |
-            node -e 'require("child_process").execSync(require("./gudetama.config.js").steps["<< parameters.step >>"].command, {stdio: "inherit"})'
+          command: gudetama run-if-needed << parameters.step >>
+          # command: |
+          #   node -e 'require("child_process").execSync(require("./gudetama.config.js").steps["<< parameters.step >>"].command, {stdio: "inherit"})'
 
   setup:
     steps:
