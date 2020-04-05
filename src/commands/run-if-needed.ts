@@ -7,9 +7,10 @@ import {
 import { cyan, bold } from 'kleur'
 import { runCommand } from '../runCommand'
 import { writeManifest } from '../manifest/writeManifest'
-import { compareManifests } from '../manifest/compareManifests'
+import { compareManifests, renderChange } from '../manifest/compareManifests'
 import { log } from '../log'
 import { GudetamaStore } from '../store/GudetamaStore'
+import fs from 'fs'
 
 export async function runIfNeeded({ stepName }: { stepName: string }) {
   const store = GudetamaStore.fromConfig()
@@ -61,12 +62,16 @@ export async function runIfNeeded({ stepName }: { stepName: string }) {
         )}`
       )
       const diff = compareManifests({
-        stepName,
-        previousManifestPath: result.previousManifestPath,
+        currentManifest: fs
+          .readFileSync(getManifestPath({ stepName }))
+          .toString(),
+        previousManifest: fs
+          .readFileSync(result.previousManifestPath)
+          .toString(),
       })
       if (diff.length) {
         log.log()
-        diff.map(log.substep)
+        diff.map(renderChange).forEach(log.substep)
         log.log()
       } else {
         log.substep(`No changes found, this probably should not happen 🤔`)

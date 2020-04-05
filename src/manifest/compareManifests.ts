@@ -1,23 +1,20 @@
-import fs from 'fs'
-import { getManifestPath } from '../config'
 import { cyan, bold, red, green } from 'kleur'
 
+export type Change = {
+  type: 'addition' | 'removal' | 'modification'
+  value: string
+}
+
 export function compareManifests({
-  stepName,
-  previousManifestPath,
+  currentManifest,
+  previousManifest,
 }: {
-  stepName: string
-  previousManifestPath: string
+  currentManifest: string
+  previousManifest: string
 }) {
-  const changes = []
-  const previousLines = fs
-    .readFileSync(previousManifestPath)
-    .toString().trim()
-    .split('\n')
-  const currentLines = fs
-    .readFileSync(getManifestPath({ stepName }))
-    .toString().trim()
-    .split('\n')
+  const changes: Change[] = []
+  const previousLines = previousManifest.trim().split('\n')
+  const currentLines = currentManifest.trim().split('\n')
 
   let i = 0
   let j = 0
@@ -29,19 +26,30 @@ export function compareManifests({
       i++
       j++
       if (previousHash !== currentHash) {
-        changes.push(cyan(`${bold(currentThing)} is different`))
+        changes.push({ type: 'modification', value: currentThing })
       }
     } else if (
       previousThing &&
       (previousThing < currentThing || (previousThing && !currentThing))
     ) {
       i++
-      changes.push(red(`${bold(previousThing)} was removed`))
+      changes.push({ type: 'removal', value: previousThing })
     } else {
       j++
-      changes.push(green(`${bold(currentThing)} was added`))
+      changes.push({ type: 'addition', value: currentThing })
     }
   }
 
   return changes
+}
+
+export function renderChange({ type, value }: Change): string {
+  switch (type) {
+    case 'addition':
+      return green(`${bold(value)} was added`)
+    case 'modification':
+      return cyan(`${bold(value)} is different`)
+    case 'removal':
+      return red(`${bold(value)} was removed`)
+  }
 }
