@@ -1,9 +1,10 @@
 import fs from 'fs-extra'
 import { hashFile, hashString } from './hash'
 import path from 'path'
-import { getManifestPath, getStep } from '../config'
-import { getManifestFiles } from './getManifestFiles'
+import { getManifestPath } from '../config'
+import { getInputFiles } from './getInputFiles'
 import { exec } from '../exec'
+import { getInputCommands } from './getInputCommands'
 
 export async function writeManifest({ stepName }: { stepName: string }) {
   const outputPath = getManifestPath({ stepName })
@@ -12,7 +13,7 @@ export async function writeManifest({ stepName }: { stepName: string }) {
   }
   const out = fs.createWriteStream(outputPath)
 
-  const commandsArray = getStep({ stepName }).inputCommands || []
+  const commandsArray = getInputCommands({ stepName })
   commandsArray.sort()
   for (const command of commandsArray) {
     out.write(
@@ -22,7 +23,7 @@ export async function writeManifest({ stepName }: { stepName: string }) {
     )
   }
 
-  const filesArray = [...getManifestFiles({ stepName })]
+  const filesArray = [...getInputFiles({ stepName })]
   filesArray.sort()
   for (const file of filesArray) {
     out.write(`file ${file}\t${hashFile(file)}\n`)

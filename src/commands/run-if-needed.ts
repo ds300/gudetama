@@ -1,23 +1,25 @@
 import {
   getManifestPath,
-  config,
   shouldRunStepOnCurrentBranch,
   renderStepName,
+  getConfig,
 } from '../config'
 import { cyan, bold } from 'kleur'
 import { runCommand } from '../runCommand'
 import { writeManifest } from '../manifest/writeManifest'
-import { store } from '../store/store'
-import { compareManifests } from '../manifest/compareManifests'
+import { compareManifests, renderChange } from '../manifest/compareManifests'
 import { log } from '../log'
+import { GudetamaStore } from '../store/GudetamaStore'
+import fs from 'fs'
 
 export async function runIfNeeded({ stepName }: { stepName: string }) {
+  const store = GudetamaStore.fromConfig()
   switch (shouldRunStepOnCurrentBranch({ stepName })) {
     case 'always':
       const done = log.timedTask(
         `Running ${renderStepName({
           stepName,
-        })} because this is the ${cyan(config.currentBranch)} branch`
+        })} because this is the ${cyan(getConfig().currentBranch)} branch`
       )
       await runCommand({ stepName })
       done('Finished')
@@ -26,7 +28,7 @@ export async function runIfNeeded({ stepName }: { stepName: string }) {
       log.task(
         `Skipping ${renderStepName({
           stepName,
-        })} because this is the ${cyan(config.currentBranch)} branch`
+        })} because this is the ${cyan(getConfig().currentBranch)} branch`
       )
       return
     case 'maybe':
@@ -60,13 +62,17 @@ export async function runIfNeeded({ stepName }: { stepName: string }) {
         )}`
       )
       const diff = compareManifests({
-        stepName,
-        previousManifestPath: result.previousManifestPath,
+        currentManifest: fs
+          .readFileSync(getManifestPath({ stepName }))
+          .toString(),
+        previousManifest: fs
+          .readFileSync(result.previousManifestPath)
+          .toString(),
       })
       if (diff.length) {
-        console.log()
-        diff.map(log.substep)
-        console.log()
+        log.log()
+        diff.map(renderChange).forEach(log.substep)
+        log.log()
       } else {
         log.substep(`No changes found, this probably should not happen 🤔`)
       }

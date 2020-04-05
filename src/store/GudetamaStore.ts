@@ -4,13 +4,19 @@ import rimraf from 'rimraf'
 import { S3StoreBackend } from './S3StoreBackend'
 import { log } from '../log'
 import prettyBytes from 'pretty-bytes'
-import { getStepKey, config, getManifestPath, getArchivePaths } from '../config'
+import {
+  getStepKey,
+  getManifestPath,
+  getArchivePaths,
+  getConfig,
+} from '../config'
 import { hashFile } from '../manifest/hash'
 import { exec } from '../exec'
 import type { CacheBackend } from '@artsy/gudetama'
 import { spawn } from 'child_process'
 import glob from 'glob'
 import { bold } from 'kleur'
+import os from 'os'
 
 export const INDEX_VERSION = 0
 
@@ -30,11 +36,12 @@ export interface StepIndex {
 }
 
 export class GudetamaStore {
+  static fromConfig() {
+    return new GudetamaStore(getConfig().getObjectStore())
+  }
   private tmpdir: string
   constructor(public cache: CacheBackend = new S3StoreBackend()) {
-    this.tmpdir = fs.mkdtempSync(
-      path.join(process.env.TMPDIR || '/tmp', 'gudetama-')
-    )
+    this.tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'gudetama-'))
     process.addListener('exit', () => {
       rimraf.sync(this.tmpdir)
     })
@@ -115,7 +122,7 @@ export class GudetamaStore {
           index.objects.splice(existing, 1)
         }
         index.objects.push({
-          branch: config.currentBranch,
+          branch: getConfig().currentBranch,
           type: objectType,
           // time zone doesn't matter too much here,
           // we only use these for sorting and cache pruning
@@ -189,7 +196,7 @@ export class GudetamaStore {
     return `${getStepKey({ stepName })}-${objectType}-${
       // caches do not need exact matching (in fact it balloons cache size)
       // so we only store them by branch
-      objectType === 'cache' ? config.currentBranch : currentManifestHash
+      objectType === 'cache' ? getConfig().currentBranch : currentManifestHash
     }`
   }
 
@@ -358,10 +365,10 @@ export class GudetamaStore {
     index.objects.sort(objectComparator)
     for (const match of [
       index.objects.find(
-        (o) => o.type === 'manifest' && o.branch === config.currentBranch
+        (o) => o.type === 'manifest' && o.branch === getConfig().currentBranch
       ),
       index.objects.find(
-        (o) => o.type === 'manifest' && o.branch === config.primaryBranch
+        (o) => o.type === 'manifest' && o.branch === getConfig().primaryBranch
       ),
     ]) {
       if (
@@ -397,11 +404,13 @@ export class GudetamaStore {
       for (const match of [
         index.objects.find(
           (o) =>
-            o.type === 'persistent_cache' && o.branch === config.currentBranch
+            o.type === 'persistent_cache' &&
+            o.branch === getConfig().currentBranch
         ),
         index.objects.find(
           (o) =>
-            o.type === 'persistent_cache' && o.branch === config.primaryBranch
+            o.type === 'persistent_cache' &&
+            o.branch === getConfig().primaryBranch
         ),
       ]) {
         if (
@@ -436,10 +445,10 @@ export class GudetamaStore {
     if (cachePaths.length) {
       for (const match of [
         index.objects.find(
-          (o) => o.type === 'cache' && o.branch === config.currentBranch
+          (o) => o.type === 'cache' && o.branch === getConfig().currentBranch
         ),
         index.objects.find(
-          (o) => o.type === 'cache' && o.branch === config.primaryBranch
+          (o) => o.type === 'cache' && o.branch === getConfig().primaryBranch
         ),
       ]) {
         if (
@@ -544,9 +553,10 @@ export class GudetamaStore {
   }
 }
 
+// sorts in descending date order
 function objectComparator(
   a: StepIndex['objects'][0],
   b: StepIndex['objects'][0]
 ) {
-  return new Date(a.creationDate).valueOf() - new Date(b.creationDate).valueOf()
+  return new Date(b.creationDate).valueOf() - new Date(a.creationDate).valueOf()
 }

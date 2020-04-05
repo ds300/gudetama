@@ -40,7 +40,14 @@ function checkStepNamesDontClash(config: ConfigFile) {
   }
 }
 
-function loadConfig(): Required<ConfigFile> {
+export type Config = Required<ConfigFile>
+
+let _config: Config | null = null
+
+export function getConfig(): Config {
+  if (_config) {
+    return _config
+  }
   const file = process.env.GUDETAMA_CONFIG_PATH || './gudetama.config.js'
   if (!fs.existsSync(file)) {
     log.fail(`Can't find gudetama config file at '${file}'`)
@@ -56,7 +63,7 @@ function loadConfig(): Required<ConfigFile> {
       getCurrentBranch(),
     primaryBranch: userConfig.primaryBranch || 'master',
     manifestDir: '.gudetama-manifests',
-    getCacheBackend() {
+    getObjectStore() {
       return isCi ? new S3StoreBackend() : new FSBackend()
     },
     ...userConfig,
@@ -64,13 +71,12 @@ function loadConfig(): Required<ConfigFile> {
 
   checkStepNamesDontClash(config)
 
+  _config = config
   return config
 }
 
-export const config = loadConfig()
-
 export function getStep({ stepName }: { stepName: string }) {
-  return config.steps[stepName] ?? log.fail(`No step called '${stepName}'`)
+  return getConfig().steps[stepName] ?? log.fail(`No step called '${stepName}'`)
 }
 
 export function getArchivePaths({ stepName }: { stepName: string }) {
@@ -101,11 +107,13 @@ export function getStepKey({ stepName }: { stepName: string }) {
   const step = getStep({ stepName })
   const slug = slugify(stepName)
   const stepHash = hashString(stableStringify(step))
-  return [config.repoID, config.cacheVersion, slug, stepHash].join('-')
+  return [getConfig().repoID, getConfig().cacheVersion, slug, stepHash].join(
+    '-'
+  )
 }
 
 export function getManifestPath({ stepName }: { stepName: string }) {
-  return path.join(config.manifestDir, slugify(stepName))
+  return path.join(getConfig().manifestDir, slugify(stepName))
 }
 
 export function shouldRunStepOnCurrentBranch({
@@ -115,13 +123,14 @@ export function shouldRunStepOnCurrentBranch({
 }): 'maybe' | 'no' | 'always' {
   const step = getStep({ stepName })
   if (
-    step.branches?.never?.includes(config.currentBranch) ||
-    (step.branches?.only && !step.branches.only.includes(config.currentBranch))
+    step.branches?.never?.includes(getConfig().currentBranch) ||
+    (step.branches?.only &&
+      !step.branches.only.includes(getConfig().currentBranch))
   ) {
     return 'no'
   }
 
-  if (step.branches?.always?.includes(config.currentBranch)) {
+  if (step.branches?.always?.includes(getConfig().currentBranch)) {
     return 'always'
   }
 

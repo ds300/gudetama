@@ -1,4 +1,8 @@
-import { shouldRunStepOnCurrentBranch, renderStepName, config } from '../config'
+import {
+  shouldRunStepOnCurrentBranch,
+  renderStepName,
+  getConfig,
+} from '../config'
 import { log } from '../log'
 import { cyan } from 'kleur'
 import { runCommand } from '../runCommand'
@@ -8,7 +12,7 @@ export async function run({ stepName }: { stepName: string }) {
     log.task(
       `Skipping ${renderStepName({
         stepName,
-      })} because this is the ${cyan(config.currentBranch)} branch`
+      })} because this is the ${cyan(getConfig().currentBranch)} branch`
     )
     return
   }

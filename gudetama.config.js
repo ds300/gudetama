@@ -1,32 +1,81 @@
 // @ts-check
 /**
- * @type {import('@artsy/gudetama').ConfigFile}
+ * @type {import('@artsy/gudetama').ConfigFile<'install-node-modules' | 'type-check' | 'build-bundle' | 'build-npm' | 'prepare-tests' | 'test'>}
  */
 const config = {
   repoID: 'gudetama',
   cacheVersion: 1,
   steps: {
-    install_node_modules: {
+    'install-node-modules': {
       command: 'yarn',
-      inputFiles: {
-        include: ['yarn.lock', 'package.json'],
+      inputs: {
+        commands: ['yarn --version', 'node --version'],
+        files: {
+          include: ['yarn.lock', 'package.json'],
+        },
       },
+
       outputFiles: ['node_modules'],
     },
-    'yarn test': {
-      inputFiles: {
-        include: ['lib/**/*'],
+    'type-check': {
+      command: 'yarn tsc',
+      inputs: {
+        extends: ['install-node-modules'],
+        files: {
+          include: [
+            'src',
+            'integration-tests',
+            'scripts',
+            'typings',
+            'tsconfig.json',
+          ],
+        },
       },
     },
-    test: {
-      command: 'mkdir -p .test && echo banana > .test/bananas',
-      inputFiles: {
-        include: ['package.json'],
+    'build-bundle': {
+      command: 'yarn build-bundle',
+      inputs: {
+        extends: ['install-node-modules'],
+        files: {
+          include: [
+            'src',
+            'rollup.config.js',
+            'tsconfig.json',
+            'babel.config.js',
+          ],
+          exclude: ['src/**/*.test.ts'],
+        },
       },
-      outputFiles: ['node_modules/lodash'],
-      inputCommands: ['yarn --version', 'node --version'],
-      branches: {
-        never: ['jussie smolet'],
+      outputFiles: ['gudetama.v*.js'],
+    },
+    'build-npm': {
+      command: 'yarn build-npm',
+      inputs: {
+        extends: ['install-node-modules'],
+        files: {
+          include: ['src', 'tsconfig*', 'babel.config.js'],
+          exclude: ['src/**/*.test.ts'],
+        },
+      },
+      outputFiles: ['lib'],
+    },
+    'prepare-tests': {
+      command: './scripts/prepare-tests.sh',
+      inputs: {
+        extends: ['build-bundle', 'build-npm'],
+        files: {
+          include: ['scripts'],
+        },
+      },
+      outputFiles: ['test-bin'],
+    },
+    test: {
+      command: 'yarn test',
+      inputs: {
+        extends: ['prepare-tests'],
+        files: {
+          include: ['jest.config.js', 'integration-tests', 'src/**/*.test.ts'],
+        },
       },
     },
   },

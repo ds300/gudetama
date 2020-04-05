@@ -5,13 +5,18 @@ import { runIfNeeded } from './commands/run-if-needed'
 import { help } from './commands/help'
 import { run } from './commands/run'
 import { prune } from './commands/prune'
+import { silence } from './log'
 
-async function cli([command, stepName]: string[]) {
+async function cli([command, stepName, ...options]: string[]) {
   if (command.match(/^(-v|--version)$/)) {
     console.log(version)
     process.exit()
   }
-  console.log(`${bold('gudetama')} ${version}`)
+  if (options.includes('--silent')) {
+    silence()
+  } else {
+    console.log(`${bold('gudetama')} ${version}`)
+  }
 
   switch (command) {
     case 'run-if-needed':

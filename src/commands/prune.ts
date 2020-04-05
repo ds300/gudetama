@@ -1,10 +1,11 @@
 import { log } from '../log'
 import { StepIndex } from '../store/GudetamaStore'
 import prettyBytes from 'pretty-bytes'
-import { store } from '../store/store'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import rimraf from 'rimraf'
+import os from 'os'
+import { getConfig } from '../config'
 
 const maxObjectLifetime =
   Number(process.env.MAX_OBJECT_LIFETIME_DAYS || '7') * 24 * 60 * 60 * 1000
@@ -18,19 +19,20 @@ function isTooOld(obj: ObjectData) {
 type ObjectData = StepIndex['objects'][0]
 
 export async function prune() {
-  if (!store.cache.listAllObjects || !store.cache.deleteObject) {
+  const objectStore = getConfig().getObjectStore()
+  if (!objectStore.listAllObjects || !objectStore.deleteObject) {
     log.fail(
       'In order to use the `prune` command your object store must implement both `listAllObjects` and `deleteObject`'
     )
   }
-  const tmpdir = join(process.env.TMPDIR || '/tmp', 'gudetama-prune')
+  const tmpdir = join(os.tmpdir(), 'gudetama-prune')
   mkdirSync(tmpdir)
 
   try {
     const done = log.timedTask('Pruning gudetama cache')
 
     const allObjects = await log.timedStep('Getting all object keys', () =>
-      store.cache.listAllObjects!()
+      objectStore.listAllObjects!()
     )
 
     const liveObjects: ObjectData[] = []
@@ -43,7 +45,7 @@ export async function prune() {
       async () => {
         for (const { key: indexKey } of indexes) {
           const indexPath = join(tmpdir, 'index.json')
-          if (!(await store.cache.getObject(indexKey, indexPath))) {
+          if (!(await objectStore.getObject(indexKey, indexPath))) {
             continue
           }
           const index = JSON.parse(
@@ -66,10 +68,10 @@ export async function prune() {
 
           if (index.objects.length === 0) {
             log.substep(`Removing index ${indexKey}`)
-            await store.cache.deleteObject!(indexKey)
+            await objectStore.deleteObject!(indexKey)
           } else {
             writeFileSync(indexPath, JSON.stringify(index, null, '  '))
-            await store.cache.putObject(indexKey, indexPath)
+            await objectStore.putObject(indexKey, indexPath)
           }
         }
       }
@@ -98,7 +100,7 @@ export async function prune() {
         )})`,
         async () => {
           for (const object of allDeadObjects) {
-            await store.cache.deleteObject!(object.key)
+            await objectStore.deleteObject!(object.key)
           }
         }
       )

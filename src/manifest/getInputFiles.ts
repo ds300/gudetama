@@ -3,16 +3,16 @@ import glob from 'glob'
 import fs from 'fs'
 import path from 'path'
 
-export function getManifestFiles({ stepName }: { stepName: string }) {
-  const { inputFiles } = getStep({ stepName })
+export function getInputFiles({ stepName }: { stepName: string }) {
+  const { inputs } = getStep({ stepName })
   const files = new Set<string>()
 
-  for (const extendedStepName of inputFiles?.extends ?? []) {
-    for (const file of getManifestFiles({ stepName: extendedStepName })) {
+  for (const extendedStepName of inputs?.extends ?? []) {
+    for (const file of getInputFiles({ stepName: extendedStepName })) {
       files.add(file)
     }
   }
-  for (const globPattern of inputFiles?.include ?? []) {
+  for (const globPattern of inputs?.files?.include ?? []) {
     for (const file of glob.sync(globPattern)) {
       if (fs.statSync(file).isDirectory()) {
         visitAllFiles(file, (filePath) => files.add(filePath))
@@ -21,7 +21,7 @@ export function getManifestFiles({ stepName }: { stepName: string }) {
       }
     }
   }
-  for (const globPattern of inputFiles?.exclude ?? []) {
+  for (const globPattern of inputs?.files?.exclude ?? []) {
     for (const file of glob.sync(globPattern)) {
       if (fs.statSync(file).isDirectory()) {
         visitAllFiles(file, (filePath) => files.delete(filePath))

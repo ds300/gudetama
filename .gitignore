@@ -8,3 +8,6 @@ install.sh
 dist.js
 lib
 gudetama.v*.js
+artsy-gudetama-*.tgz
+test-bin
+.jest
