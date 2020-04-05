@@ -4,9 +4,9 @@ declare module '@artsy/gudetama' {
     exclude?: string[]
   }
 
-  export interface Step {
+  export interface Step<StepName extends string = string> {
     inputs?: {
-      extends?: string[]
+      extends?: StepName[]
       files?: InputFiles
       commands?: string[]
     }
@@ -20,8 +20,8 @@ declare module '@artsy/gudetama' {
     }
   }
 
-  export interface Steps {
-    [step_name: string]: Step
+  export type Steps<StepName extends string = string> = {
+    [k in StepName]: Step<StepName>
   }
 
   export interface CacheBackend {
@@ -31,10 +31,10 @@ declare module '@artsy/gudetama' {
     deleteObject?(objectKey: string): Promise<void>
   }
 
-  export interface ConfigFile {
+  export interface ConfigFile<StepName extends string = string> {
     repoID: string
     cacheVersion: number
-    steps: Steps
+    steps: Steps<StepName>
     getCacheBackend?(): CacheBackend
     currentBranch?: string
     primaryBranch?: string

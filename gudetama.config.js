@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * @type {import('@artsy/gudetama').ConfigFile}
+ * @type {import('@artsy/gudetama').ConfigFile<'install-node-modules' | 'type-check' | 'build-bundle' | 'build-npm' | 'prepare-tests' | 'test'>}
  */
 const config = {
   repoID: 'gudetama',
@@ -17,12 +17,33 @@ const config = {
 
       outputFiles: ['node_modules'],
     },
+    'type-check': {
+      command: 'yarn tsc',
+      inputs: {
+        extends: ['install-node-modules'],
+        files: {
+          include: [
+            'src',
+            'integration-tests',
+            'scripts',
+            'typings',
+            'tsconfig.json',
+          ],
+        },
+      },
+    },
     'build-bundle': {
       command: 'yarn build-bundle',
       inputs: {
         extends: ['install-node-modules'],
         files: {
-          include: ['src', 'rollup.config.js', 'tsconfig*', 'babel.config.js'],
+          include: [
+            'src',
+            'rollup.config.js',
+            'tsconfig.json',
+            'babel.config.js',
+          ],
+          exclude: ['src/**/*.test.ts'],
         },
       },
       outputFiles: ['gudetama.v*.js'],
@@ -32,7 +53,8 @@ const config = {
       inputs: {
         extends: ['install-node-modules'],
         files: {
-          include: ['src/**/*', 'tsconfig*', 'babel.config.js'],
+          include: ['src', 'tsconfig*', 'babel.config.js'],
+          exclude: ['src/**/*.test.ts'],
         },
       },
       outputFiles: ['lib'],
@@ -42,7 +64,16 @@ const config = {
       inputs: {
         extends: ['build-bundle', 'build-npm'],
       },
-      outputFiles: ['test-bin'],
+      outputFiles: ['test-bin', 'scripts'],
+    },
+    test: {
+      command: 'yarn test',
+      inputs: {
+        extends: ['prepare-tests'],
+        files: {
+          include: ['jest.config.js', 'integration-tests'],
+        },
+      },
     },
   },
 }

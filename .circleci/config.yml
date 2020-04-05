@@ -4,40 +4,60 @@ orbs:
   node: artsy/node@1.0.0
   queue: eddiewebb/queue@1.0.110
 
-jobs:
-  deploy:
-    executor: node/build
+commands:
+  run-if-needed:
+    parameters:
+      step:
+        type: string
+    steps:
+      - run:
+          name: |
+            Run '<< parameters.step >>' if needed
+          command: gudetama run-if-needed << parameters.step >>
+
+  setup:
     steps:
       - run:
           name: install gudetama
           command: |
             curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-13/install.sh | source /dev/stdin
-      - queue/until_front_of_line:
-          time: '2' # how long a queue will wait until the job exits
-          only-on-branch: master # restrict queueing to a specific branch (default *)
-          consider-job: false # block whole workflow if any job still running
       - add_ssh_keys:
           fingerprints:
             - 'ba:dc:36:72:d2:df:5e:68:cc:1e:4e:b8:39:a4:5a:d8'
       - checkout
-      - run:
-          name: install node_modules
-          command: gudetama run-if-needed install-node-modules
-      - run:
-          name: type check
-          command: yarn tsc
-      - run:
-          name: build
-          command: yarn build-npm && yarn build-bundle
+      - run-if-needed:
+          step: install-node-modules
+
+jobs:
+  test:
+    executor: node/build
+    steps:
+      - setup
+      - run-if-needed:
+          step: type-check
+      - run-if-needed:
+          step: test
+
+  deploy:
+    executor: node/build
+    steps:
+      - setup
+      - queue/until_front_of_line:
+          time: '2' # how long a queue will wait until the job exits
+          only-on-branch: master # restrict queueing to a specific branch (default *)
+          consider-job: false # block whole workflow if any job still running
       - run:
           name: release
           command: yarn release
 
 workflows:
-  deploy:
+  test-deploy:
     jobs:
+      - test
       - deploy:
           context: npm-deploy
+          requires:
+            - test
           filters:
             branches:
               only:
