@@ -1,10 +1,11 @@
 import { spawnSync } from 'child_process'
-import { store } from './store/store'
 import { getStep } from './config'
 import { log } from './log'
 import { green, gray, cyan } from 'kleur'
+import { GudetamaStore } from './store/GudetamaStore'
 
 export async function runCommand({ stepName }: { stepName: string }) {
+  const store = GudetamaStore.fromConfig()
   await store.restoreCaches({ stepName })
   const step = getStep({ stepName })
   const command = step.command || stepName

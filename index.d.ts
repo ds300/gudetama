@@ -35,7 +35,7 @@ declare module '@artsy/gudetama' {
     repoID: string
     cacheVersion: number
     steps: Steps<StepName>
-    getCacheBackend?(): CacheBackend
+    getObjectStore?(): CacheBackend
     currentBranch?: string
     primaryBranch?: string
     manifestDir?: string

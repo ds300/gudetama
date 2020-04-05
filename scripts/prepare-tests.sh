@@ -2,7 +2,6 @@ set -e
 
 rm -rf test-bin
 mkdir test-bin
-export PATH=$(echo $PATH:$PWD/test-bin)
 
 # prepare bundle
 current_version=$(node -e 'console.log(require("./package.json").version)')
