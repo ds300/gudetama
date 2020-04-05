@@ -3,9 +3,8 @@ import { parse } from 'semver'
 import { writeFileSync, readFileSync, statSync } from 'fs'
 import { execSync } from 'child_process'
 import { Octokit } from '@octokit/rest'
-import { createInstallScript } from './create-install-script'
 
-function replaceCurlCommand({
+function updateCurlCommand({
   file,
   oldVersion,
   newVersion,
@@ -52,8 +51,9 @@ async function release() {
 
   log.step('Bumping version in package.json, README.md, and config.yml')
 
-  replaceCurlCommand({ file: './README.md', oldVersion, newVersion })
-  replaceCurlCommand({
+  updateCurlCommand({ file: './install.sh', oldVersion, newVersion })
+  updateCurlCommand({ file: './README.md', oldVersion, newVersion })
+  updateCurlCommand({
     file: './.circleci/config.yml',
     oldVersion,
     newVersion,
@@ -109,7 +109,6 @@ async function release() {
   log.step(`Uploading release artifacts`)
   log.substep(`install.sh`)
 
-  writeFileSync('install.sh', createInstallScript({ releaseTag }))
   await gh.repos.uploadReleaseAsset({
     repo: 'gudetama',
     owner: 'artsy',
