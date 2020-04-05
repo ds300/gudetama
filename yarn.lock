@@ -7,23 +7,6 @@
   resolved "https://registry.yarnpkg.com/@artsy/auto-config/-/auto-config-1.0.2.tgz#b79f6fd0d0bda0c5e0764ced55e014cf58174d6f"
   integrity sha512-mJyuKNDMYZcgc2oLIkvmpVIr1RexklV71JmU+to5qs3Y9pv5dsj4WHl8+wf9g74EQNOyhWH2SYMGBm1JoPYh/Q==
 
-"@artsy/gudetama@^1.0.0-12":
-  version "1.0.0-12"
-  resolved "https://registry.yarnpkg.com/@artsy/gudetama/-/gudetama-1.0.0-12.tgz#afb9adc9b699f0b88e703ec27aef85047cbf2c6b"
-  integrity sha512-VoEch8V5PmB1bTMqtP6GnQwuywpm2MIs9tSVTV2RoA1HYqN7+42No0v4JWh4dZpWpAxwnGABoapkLxcSRprA9A==
-  dependencies:
-    "@sindresorhus/slugify" "^0.11.0"
-    aws4 "^1.9.1"
-    crypto-js "^4.0.0"
-    fast-json-stable-stringify "^2.1.0"
-    fs-extra "^9.0.0"
-    glob "^7.1.6"
-    is-ci "^2.0.0"
-    kleur "^3.0.3"
-    pretty-bytes "^5.3.0"
-    rimraf "^3.0.2"
-    sax "^1.2.4"
-
 "@babel/cli@^7.8.4":
   version "7.8.4"
   resolved "https://registry.yarnpkg.com/@babel/cli/-/cli-7.8.4.tgz#505fb053721a98777b2b175323ea4f090b7d3c1c"

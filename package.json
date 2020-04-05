@@ -26,6 +26,7 @@
     "compress": "gzip dist/cli.js",
     "babel-node": "babel-node --extensions '.ts'",
     "release": "yarn babel-node scripts/release.ts",
+    "test": "scripts/run-tests.sh",
     "type-check": "tsc --pretty --noEmit"
   },
   "lint-changed": {
@@ -48,7 +49,6 @@
   },
   "devDependencies": {
     "@artsy/auto-config": "^1.0.2",
-    "@artsy/gudetama": "^1.0.0-12",
     "@babel/cli": "^7.8.4",
     "@babel/core": "^7.9.0",
     "@babel/node": "^7.8.7",

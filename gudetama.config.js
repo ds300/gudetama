@@ -8,40 +8,41 @@ const config = {
   steps: {
     'install-node-modules': {
       command: 'yarn',
-      inputCommands: ['yarn --version', 'node --version'],
-      inputFiles: {
-        include: ['yarn.lock', 'package.json'],
+      inputs: {
+        commands: ['yarn --version', 'node --version'],
+        files: {
+          include: ['yarn.lock', 'package.json'],
+        },
       },
+
       outputFiles: ['node_modules'],
     },
     'build-bundle': {
       command: 'yarn build-bundle',
-      inputCommands: ['yarn --version', 'node --version'],
-      inputFiles: {
+      inputs: {
         extends: ['install-node-modules'],
-        include: ['src'],
+        files: {
+          include: ['src', 'rollup.config.js', 'tsconfig*', 'babel.config.js'],
+        },
       },
-      outputFiles: ['gudetama.v*.js']
+      outputFiles: ['gudetama.v*.js'],
     },
     'build-npm': {
       command: 'yarn build-npm',
-      inputCommands: ['yarn --version', 'node --version'],
-      inputFiles: {
+      inputs: {
         extends: ['install-node-modules'],
-        include: ['src/**/*'],
+        files: {
+          include: ['src/**/*', 'tsconfig*', 'babel.config.js'],
+        },
       },
-      outputFiles: ['lib']
+      outputFiles: ['lib'],
     },
-    test: {
-      command: 'mkdir -p .test && echo banana > .test/bananas',
-      inputFiles: {
-        include: ['package.json'],
+    'prepare-tests': {
+      command: './scripts/prepare-tests.sh',
+      inputs: {
+        extends: ['build-bundle', 'build-npm'],
       },
-      outputFiles: ['node_modules/lodash'],
-      inputCommands: ['yarn --version', 'node --version'],
-      branches: {
-        never: ['jussie smolet'],
-      },
+      outputFiles: ['test-bin'],
     },
   },
 }

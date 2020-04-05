@@ -25,6 +25,3 @@ yarn add file:../artsy-gudetama-v0.0.0-test.tgz
 popd
 echo 'node node_modules/.bin/gudetama' > test-bin/gudetama-test-npm
 chmod +x test-bin/gudetama-test-npm
-
-
-node node_modules/.bin/jest "$@"

@@ -1,13 +1,15 @@
 declare module '@artsy/gudetama' {
   export type InputFiles = {
-    extends?: string[]
     include?: string[]
     exclude?: string[]
   }
 
   export interface Step {
-    inputFiles?: InputFiles
-    inputCommands?: string[]
+    inputs?: {
+      extends?: string[]
+      files?: InputFiles
+      commands?: string[]
+    }
     outputFiles?: string[]
     caches?: string[]
     command?: string
