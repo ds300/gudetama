@@ -19,6 +19,8 @@ export function compareManifests({
     .toString()
     .split('\n')
 
+  console.log({previousLines, currentLines})
+
   let i = 0
   let j = 0
 
