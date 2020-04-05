@@ -5,6 +5,10 @@ orbs:
   queue: eddiewebb/queue@1.0.110
 
 commands:
+  persist-manifests:
+    steps:
+      - store_artifacts:
+          path: .gudetama-manifests
   run-if-needed:
     parameters:
       step:
@@ -37,6 +41,7 @@ jobs:
           step: type-check
       - run-if-needed:
           step: test
+      - persist-manifests
 
   deploy:
     executor: node/build
