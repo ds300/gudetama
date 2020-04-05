@@ -65,9 +65,12 @@ async function release() {
 
   log.step('Creating and tagging commit')
 
-  execSync(`git add ./README.md ./.circleci/config.yml ./package.json`, {
-    stdio: 'inherit',
-  })
+  execSync(
+    `git add ./README.md ./.circleci/config.yml ./package.json ./install.sh`,
+    {
+      stdio: 'inherit',
+    }
+  )
   execSync(`git commit -m 'Release ${releaseTag} [skip ci]'`, {
     stdio: 'inherit',
   })
