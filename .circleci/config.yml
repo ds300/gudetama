@@ -26,7 +26,7 @@ commands:
       - run:
           name: install gudetama
           command: |
-            curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-13/install.sh | source /dev/stdin
+            curl -s -L https://github.com/artsy/gudetama/releases/download/v1.0.0-14/install.sh | source /dev/stdin
       - add_ssh_keys:
           fingerprints:
             - 'ba:dc:36:72:d2:df:5e:68:cc:1e:4e:b8:39:a4:5a:d8'
