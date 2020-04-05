@@ -22,7 +22,7 @@ jobs:
       - checkout
       - run:
           name: install node_modules
-          command: gudetama run-if-needed install_node_modules
+          command: gudetama run-if-needed install-node-modules
       - run:
           name: type check
           command: yarn tsc

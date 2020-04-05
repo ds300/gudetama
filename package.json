@@ -48,6 +48,7 @@
   },
   "devDependencies": {
     "@artsy/auto-config": "^1.0.2",
+    "@artsy/gudetama": "^1.0.0-12",
     "@babel/cli": "^7.8.4",
     "@babel/core": "^7.9.0",
     "@babel/node": "^7.8.7",
@@ -63,6 +64,7 @@
     "@types/aws4": "^1.5.1",
     "@types/fs-extra": "^8.1.0",
     "@types/is-ci": "^2.0.0",
+    "@types/jest": "^25.2.1",
     "@types/node": "^13.7.7",
     "@types/rimraf": "^3.0.0",
     "@types/sax": "^1.2.1",

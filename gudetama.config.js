@@ -6,17 +6,31 @@ const config = {
   repoID: 'gudetama',
   cacheVersion: 1,
   steps: {
-    install_node_modules: {
+    'install-node-modules': {
       command: 'yarn',
+      inputCommands: ['yarn --version', 'node --version'],
       inputFiles: {
         include: ['yarn.lock', 'package.json'],
       },
       outputFiles: ['node_modules'],
     },
-    'yarn test': {
+    'build-bundle': {
+      command: 'yarn build-bundle',
+      inputCommands: ['yarn --version', 'node --version'],
       inputFiles: {
-        include: ['lib/**/*'],
+        extends: ['install-node-modules'],
+        include: ['src'],
       },
+      outputFiles: ['gudetama.v*.js']
+    },
+    'build-npm': {
+      command: 'yarn build-npm',
+      inputCommands: ['yarn --version', 'node --version'],
+      inputFiles: {
+        extends: ['install-node-modules'],
+        include: ['src/**/*'],
+      },
+      outputFiles: ['lib']
     },
     test: {
       command: 'mkdir -p .test && echo banana > .test/bananas',
