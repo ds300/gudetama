@@ -553,9 +553,10 @@ export class GudetamaStore {
   }
 }
 
+// sorts in descending date order
 function objectComparator(
   a: StepIndex['objects'][0],
   b: StepIndex['objects'][0]
 ) {
-  return new Date(a.creationDate).valueOf() - new Date(b.creationDate).valueOf()
+  return new Date(b.creationDate).valueOf() - new Date(a.creationDate).valueOf()
 }

@@ -12,14 +12,12 @@ export function compareManifests({
   const changes = []
   const previousLines = fs
     .readFileSync(previousManifestPath)
-    .toString()
+    .toString().trim()
     .split('\n')
   const currentLines = fs
     .readFileSync(getManifestPath({ stepName }))
-    .toString()
+    .toString().trim()
     .split('\n')
-
-  console.log({previousLines, currentLines})
 
   let i = 0
   let j = 0
