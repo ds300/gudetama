@@ -21,7 +21,7 @@ export async function runCommand({ stepName }: { stepName: string }) {
       }
     )
   }
-  console.log(gray(`\n              ∙  ∙  ∙\n`))
+  log.log(gray(`\n              ∙  ∙  ∙\n`))
   log.step(`Done in ${cyan(((Date.now() - start) / 1000).toFixed(2) + 's')}`)
   await store.save({ stepName })
 }

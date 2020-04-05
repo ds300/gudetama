@@ -64,9 +64,9 @@ export async function runIfNeeded({ stepName }: { stepName: string }) {
         previousManifestPath: result.previousManifestPath,
       })
       if (diff.length) {
-        console.log()
+        log.log()
         diff.map(log.substep)
-        console.log()
+        log.log()
       } else {
         log.substep(`No changes found, this probably should not happen 🤔`)
       }

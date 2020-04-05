@@ -1,5 +1,15 @@
 import { cyan, grey, red, green, bold } from 'kleur'
 
+let stdout = process.stdout
+
+export function silence() {
+  stdout = { write() {} } as any
+}
+
+function writeLine(...args: any[]) {
+  stdout.write(args.join(' ') + '\n')
+}
+
 function decapitalize(str: string) {
   return str && str[0].toLowerCase() + str.slice(1)
 }
@@ -8,11 +18,11 @@ async function timedStep<T>(
   str: string,
   task: () => T | Promise<T>
 ): Promise<T> {
-  process.stdout.write(cyan(`• `) + str + '...')
+  stdout.write(cyan(`• `) + str + '...')
   const start = Date.now()
   block()
   const done = () => {
-    process.stdout.write(cyan(' ' + timeSince(start) + '\n'))
+    stdout.write(cyan(' ' + timeSince(start) + '\n'))
     release()
   }
   try {
@@ -29,11 +39,11 @@ async function timedSubstep<T>(
   str: string,
   task: () => T | Promise<T>
 ): Promise<T> {
-  process.stdout.write(grey('  ' + str + '...'))
+  stdout.write(grey('  ' + str + '...'))
   const start = Date.now()
   block()
   const done = () => {
-    process.stdout.write(cyan(' ' + timeSince(start) + '\n'))
+    stdout.write(cyan(' ' + timeSince(start) + '\n'))
     release()
   }
   try {
@@ -76,11 +86,11 @@ export const log = {
     more?.error && console.error('\n', more.error)
     process.exit(1)
   },
-  task: (str: string) => console.log(green('\n::'), bold(str), green('::\n')),
-  step: (str: string) => console.log(cyan(`•`), str),
-  substep: queueify((str: string) => console.log(grey('  ' + str))),
-  success: (str: string) => console.log('\n' + green(`✔`), bold(str)),
-  info: (str: string) => console.log('💡', str),
+  task: (str: string) => writeLine(green('\n::'), bold(str), green('::\n')),
+  step: (str: string) => writeLine(cyan(`•`), str),
+  substep: queueify((str: string) => writeLine(grey('  ' + str))),
+  success: (str: string) => writeLine('\n' + green(`✔`), bold(str)),
+  info: (str: string) => writeLine('💡', str),
   timedStep,
   timedSubstep,
   timedTask: (str: string) => {
@@ -90,6 +100,7 @@ export const log = {
       log.success(`${msg} in ${timeSince(start)}`)
     }
   },
+  log: writeLine
 }
 
 const timeSince = (start: number) =>
