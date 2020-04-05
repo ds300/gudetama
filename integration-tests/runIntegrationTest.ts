@@ -55,6 +55,7 @@ export function runIntegrationTest(
         readFileSync('test-bin/gudetama-test-npm').toString(),
         { mode: EXECUTABLE }
       )
+
       const dir = path.join(rootDir, 'npm')
       spawnSync('mkdir', ['-p', dir])
       test({ exec: createScopedExec(dir), dir })
