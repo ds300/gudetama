@@ -14,6 +14,7 @@ mv gudetama.v0.0.0-test.js test-bin/gudetama-test-bundle
 chmod +x test-bin/gudetama-test-bundle
 
 # prepare npm release
+rm -rf artsy-gudetama-v0.0.0-test.*.tgz
 yarn build-npm
 npm version 0.0.0-test --git-tag-version false
 yarn pack
