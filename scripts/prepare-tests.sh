@@ -18,7 +18,12 @@ rm -rf artsy-gudetama-v0.0.0-test.*.tgz
 yarn build-npm
 npm version 0.0.0-test --git-tag-version false
 yarn pack
-hash=$(cat artsy-gudetama-v0.0.0-test.tgz | md5)
+if which md5
+then
+  hash=$(cat artsy-gudetama-v0.0.0-test.tgz | md5)
+else
+  hash=$(cat artsy-gudetama-v0.0.0-test.tgz | md5sum)
+fi
 mv artsy-gudetama-v0.0.0-test.tgz artsy-gudetama-v0.0.0-test.$hash.tgz
 npm version $current_version --git-tag-version false
 cd test-bin
