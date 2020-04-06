@@ -4,13 +4,13 @@ import { writeFileSync, readFileSync, statSync } from 'fs'
 import { execSync } from 'child_process'
 import { Octokit } from '@octokit/rest'
 
+const RELEASE_TAG = /v\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.\d+)?)/
+
 function updateCurlCommand({
   file,
-  oldVersion,
   newVersion,
 }: {
   file: string
-  oldVersion: string
   newVersion: string
 }) {
   let atLeastOneLineChanged
@@ -18,9 +18,9 @@ function updateCurlCommand({
     .toString()
     .split('\n')
     .map((line) => {
-      if (line.match(/curl.*https/) && line.includes(oldVersion)) {
+      if (line.match(/curl.*https/) && line.match(RELEASE_TAG)) {
         atLeastOneLineChanged = true
-        return line.replace(oldVersion, newVersion)
+        return line.replace(RELEASE_TAG, newVersion)
       }
       return line
     })
@@ -51,11 +51,10 @@ async function release() {
 
   log.step('Bumping version in package.json, README.md, and config.yml')
 
-  updateCurlCommand({ file: './install.sh', oldVersion, newVersion })
-  updateCurlCommand({ file: './README.md', oldVersion, newVersion })
+  updateCurlCommand({ file: './install.sh', newVersion })
+  updateCurlCommand({ file: './README.md', newVersion })
   updateCurlCommand({
     file: './.circleci/config.yml',
-    oldVersion,
     newVersion,
   })
 
