@@ -17,10 +17,12 @@ chmod +x test-bin/gudetama-test-bundle
 yarn build-npm
 npm version 0.0.0-test --git-tag-version false
 yarn pack
+hash=$(cat artsy-gudetama-v0.0.0-test.tgz | md5)
+mv artsy-gudetama-v0.0.0-test.tgz artsy-gudetama-v0.0.0-test.$hash.tgz
 npm version $current_version --git-tag-version false
 cd test-bin
 yarn init --yes
-yarn add file:../artsy-gudetama-v0.0.0-test.tgz
+yarn add file:../artsy-gudetama-v0.0.0-test.$hash.tgz
+echo "node $PWD/node_modules/.bin/gudetama \"\$@\"" > gudetama-test-npm
 cd ../
-echo 'node node_modules/.bin/gudetama' > test-bin/gudetama-test-npm
 chmod +x test-bin/gudetama-test-npm

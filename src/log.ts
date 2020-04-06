@@ -81,7 +81,7 @@ function queueify<Args extends any[]>(f: (...args: Args) => void) {
 
 export const log = {
   fail(headline: string, more?: { error?: Error; detail?: string }) {
-    console.error(red().bold('\n\n∙ ERROR ∙'), red(headline))
+    console.error('\n\n' + red().bold('∙ ERROR ∙'), red(headline))
     more?.detail && console.error('\n' + more.detail)
     more?.error && console.error('\n', more.error)
     process.exit(1)
@@ -100,7 +100,7 @@ export const log = {
       log.success(`${msg} in ${timeSince(start)}`)
     }
   },
-  log: writeLine
+  log: writeLine,
 }
 
 const timeSince = (start: number) =>

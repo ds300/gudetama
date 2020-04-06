@@ -11,7 +11,7 @@ const config = {
       inputs: {
         commands: ['yarn --version', 'node --version'],
         files: {
-          include: ['yarn.lock', 'package.json'],
+          include: ['yarn.lock', 'package.json', 'patches'],
         },
       },
 

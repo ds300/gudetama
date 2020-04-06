@@ -1,0 +1,13 @@
+diff --git a/node_modules/@rollup/plugin-typescript/dist/index.js b/node_modules/@rollup/plugin-typescript/dist/index.js
+index c82a365..2d1989b 100644
+--- a/node_modules/@rollup/plugin-typescript/dist/index.js
++++ b/node_modules/@rollup/plugin-typescript/dist/index.js
+@@ -412,7 +412,7 @@ function emitDiagnostic(ts, context, host, diagnostic) {
+         context.error(warning);
+     }
+     else {
+-        context.warn(warning);
++        // context.warn(warning);
+     }
+ }
+ function buildDiagnosticReporter(ts, context, host) {

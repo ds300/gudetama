@@ -62,5 +62,12 @@
     /* Advanced Options */
     "forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */
   },
-  "include": ["gudetama.config.js", "src", "scripts", "index.d.ts", "typings"]
+  "include": [
+    "gudetama.config.js",
+    "src",
+    "scripts",
+    "index.d.ts",
+    "typings",
+    "integration-tests"
+  ]
 }

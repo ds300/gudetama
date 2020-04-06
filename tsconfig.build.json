@@ -3,7 +3,14 @@
   "compilerOptions": {
     "outDir": "./lib",
     "rootDir": "./src",
-    "noEmit": false,
+    "noEmit": false
   },
-  "exclude": ["scripts", "**/*.js", "lib", "dist", "node_modules"]
+  "exclude": [
+    "scripts",
+    "**/*.js",
+    "lib",
+    "dist",
+    "node_modules",
+    "integration-tests"
+  ]
 }

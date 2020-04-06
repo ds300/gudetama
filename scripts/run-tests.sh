@@ -2,5 +2,7 @@ set -e
 
 yarn babel-node src/cli run-if-needed prepare-tests --silent
 
-export PATH=$(echo $PWD/test-bin:$PATH)
+echo ''
+echo '$ jest' "$@"
+echo ''
 node node_modules/.bin/jest "$@"

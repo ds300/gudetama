@@ -1,5 +1,4 @@
-import { spawnSync, execSync } from 'child_process'
-import { writeFileSync, readFileSync, statSync } from 'fs-extra'
+import { spawnSync } from 'child_process'
 import slugify from '@sindresorhus/slugify'
 import os from 'os'
 import path from 'path'
@@ -32,44 +31,40 @@ function createScopedExec(dir: string) {
       return {
         type: 'failure',
         output: result.stderr.toString().trim(),
-        status: result.status,
+        status: result.status!,
       }
     }
   }
 }
 
-const EXECUTABLE = 33261
-
 export function runIntegrationTest(
-  name,
+  name: string,
   test: (props: {
     exec: ReturnType<typeof createScopedExec>
     dir: string
+    gudetama: string
   }) => void
 ) {
   describe(name, () => {
     const rootDir = path.join(os.tmpdir(), 'gudetama-test', slugify(name))
     describe(`[npm]`, () => {
-      writeFileSync(
-        'test-bin/gudetama',
-        readFileSync('test-bin/gudetama-test-npm').toString(),
-        { mode: EXECUTABLE }
-      )
-
       const dir = path.join(rootDir, 'npm')
       spawnSync('mkdir', ['-p', dir])
-      test({ exec: createScopedExec(dir), dir })
+      test({
+        exec: createScopedExec(dir),
+        dir,
+        gudetama: path.resolve('test-bin/gudetama-test-npm'),
+      })
     })
 
     describe(`[bundle]`, () => {
-      writeFileSync(
-        'test-bin/gudetama',
-        readFileSync('test-bin/gudetama-test-bundle').toString(),
-        { mode: EXECUTABLE }
-      )
       const dir = path.join(rootDir, 'npm')
       spawnSync('mkdir', ['-p', dir])
-      test({ exec: createScopedExec(dir), dir })
+      test({
+        exec: createScopedExec(dir),
+        dir,
+        gudetama: path.resolve('test-bin/gudetama-test-bundle'),
+      })
     })
     afterAll(() => {
       rimraf.sync(rootDir)

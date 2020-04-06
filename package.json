@@ -15,12 +15,14 @@
     "README.md",
     "index.d.ts",
     "index.js",
+    "bin.js",
     "LICENSE"
   ],
   "repository": "https://github.com/artsy/gudetama",
   "author": "David Sheldrick <d.j.sheldrick@gmail.com>",
   "license": "MIT",
   "scripts": {
+    "postinstall": "patch-package",
     "build-npm": "tsc --project tsconfig.build.json",
     "build-bundle": "./scripts/build-bundle.sh",
     "compress": "gzip dist/cli.js",
@@ -43,6 +45,7 @@
     "glob": "^7.1.6",
     "is-ci": "^2.0.0",
     "kleur": "^3.0.3",
+    "patch-package": "^6.2.2",
     "pretty-bytes": "^5.3.0",
     "rimraf": "^3.0.2",
     "sax": "^1.2.4"
