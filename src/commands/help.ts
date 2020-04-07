@@ -4,8 +4,8 @@ function required(name: string) {
   return gray('<') + name + gray('>')
 }
 
-export function help() {
-  console.log(`USAGE
+export function help(error?: boolean) {
+  console[error ? 'error' : 'log'](`USAGE
 
   ${bold('gudetama')} ${required('command')} [...args]
 

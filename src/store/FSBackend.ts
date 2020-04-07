@@ -3,7 +3,9 @@ import { join } from 'path'
 import { CacheBackend } from '@artsy/gudetama'
 
 export class FSBackend implements CacheBackend {
-  cachePath = join(process.env.HOME || process.cwd(), '.gudetama-cache')
+  cachePath =
+    process.env.GUDETAMA_CACHE_DIR ||
+    join(process.env.HOME || process.cwd(), '.gudetama-cache')
   constructor() {
     fs.mkdirsSync(this.cachePath)
   }

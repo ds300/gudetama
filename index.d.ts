@@ -12,7 +12,7 @@ declare module '@artsy/gudetama' {
     }
     outputFiles?: string[]
     caches?: string[]
-    command?: string
+    command: string
     branches?: {
       only?: string[]
       always?: string[]

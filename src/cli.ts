@@ -24,7 +24,7 @@ async function cli(args: string[]) {
 
   const [command, stepName] = args
   if (!command || !stepName) {
-    help()
+    help(true)
     process.exit(1)
   }
 
@@ -45,7 +45,7 @@ async function cli(args: string[]) {
       help()
       process.exit(0)
     default:
-      help()
+      help(true)
       process.exit(1)
   }
 }
