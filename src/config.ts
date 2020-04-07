@@ -62,7 +62,9 @@ export function getConfig(): Config {
     primaryBranch: userConfig.primaryBranch || 'master',
     manifestDir: '.gudetama-manifests',
     getObjectStore() {
-      return isCi ? new S3StoreBackend() : new FSBackend()
+      return isCi && process.env.NODE_ENV !== 'test'
+        ? new S3StoreBackend()
+        : new FSBackend()
     },
     ...userConfig,
   }
