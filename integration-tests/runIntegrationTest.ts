@@ -8,10 +8,6 @@ import { writeFileSync } from 'fs-extra'
 import stripAnsi from 'strip-ansi'
 import { red } from 'kleur'
 
-const TMPDIR = path.join(os.tmpdir(), 'gudetama-test')
-
-console.log("TMPDIR", TMPDIR)
-
 type ExecResult =
   | {
       type: 'success'

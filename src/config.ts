@@ -58,11 +58,7 @@ export function getConfig(): Config {
   const userConfig = require(path.join(process.cwd(), file)) as ConfigFile
 
   const config = {
-    currentBranch:
-      userConfig.currentBranch ||
-      process.env.CIRCLE_BRANCH ||
-      process.env.TRAVIS_BRANCH ||
-      getCurrentBranch(),
+    currentBranch: userConfig.currentBranch || getCurrentBranch(),
     primaryBranch: userConfig.primaryBranch || 'master',
     manifestDir: '.gudetama-manifests',
     getObjectStore() {
