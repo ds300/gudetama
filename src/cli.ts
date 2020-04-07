@@ -7,15 +7,25 @@ import { run } from './commands/run'
 import { prune } from './commands/prune'
 import { silence } from './log'
 
-async function cli([command, stepName, ...options]: string[]) {
-  if (command.match(/^(-v|--version)$/)) {
+async function cli(args: string[]) {
+  if (args.includes('--version' || args.includes('-v'))) {
     console.log(version)
     process.exit()
   }
-  if (options.includes('--silent')) {
+  if (args.includes('--help' || args.includes('-h'))) {
+    console.log(version)
+    process.exit()
+  }
+  if (args.includes('--silent')) {
     silence()
   } else {
     console.log(`${bold('gudetama')} ${version}`)
+  }
+
+  const [command, stepName] = args
+  if (!command || !stepName) {
+    help()
+    process.exit(1)
   }
 
   switch (command) {
@@ -32,8 +42,6 @@ async function cli([command, stepName, ...options]: string[]) {
       await prune()
       break
     case 'help':
-    case '--help':
-    case '-h':
       help()
       process.exit(0)
     default:
