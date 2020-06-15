@@ -50,7 +50,7 @@ export function getConfig(): Config {
   }
   const file = process.env.GUDETAMA_CONFIG_PATH || './gudetama.config.js'
   if (!fs.existsSync(file)) {
-    log.fail(`Can't find mcdonalds config file at '${file}'`, {
+    log.fail(`Can't find config file at '${file}'`, {
       error: new Error('stack'),
     })
   }

@@ -1,6 +1,6 @@
-import { runIntegrationTest } from './runIntegrationTest'
+import { describeIntegrationTest } from './describeIntegrationTest'
 
-runIntegrationTest('gudetama in integration tests', ({ gudetama }) => {
+describeIntegrationTest('gudetama in integration tests', ({ gudetama }) => {
   let numTimesExecuted = 0
   it(`is the right bin`, () => {
     expect(gudetama).toMatch('test-bin/gudetama-test-')

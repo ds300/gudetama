@@ -70,7 +70,7 @@ function createScopedExec({
   return createScopedSpawn({ dir, shell: true })
 }
 
-export function runIntegrationTest(
+export function describeIntegrationTest(
   name: string,
   test: (props: {
     spawn: ReturnType<typeof createScopedSpawn>
