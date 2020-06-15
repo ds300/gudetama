@@ -122,3 +122,55 @@ describeIntegrationTest(
     })
   }
 )
+
+describeIntegrationTest(
+  'the always branch filter option',
+  ({ exec, dir, gudetama, writeConfig }) => {
+    exec('git init')
+    exec('git commit --allow-empty -m initial')
+
+    it(`is runs every time on that branch, even if nothing changed`, async () => {
+      exec('echo hello_1 > input.txt')
+      writeConfig({
+        ...defaultConfig,
+        steps: {
+          'run-tests': {
+            command: 'touch ran.txt',
+            inputs: {
+              files: {
+                include: ['input.txt'],
+              },
+            },
+            branches: {
+              always: ['beta'],
+            },
+          },
+        },
+      })
+      expect(existsSync(join(dir, 'ran.txt'))).toBeFalsy()
+      exec(`${gudetama} run-if-needed run-tests`)
+      expect(existsSync(join(dir, 'ran.txt'))).toBeTruthy()
+      exec('rm ran.txt')
+
+      // input didn't change so should not run
+      exec(`${gudetama} run-if-needed run-tests`)
+      expect(existsSync(join(dir, 'ran.txt'))).toBeFalsy()
+
+      exec('echo hello_2 > input.txt')
+      exec(`${gudetama} run-if-needed run-tests`)
+      expect(existsSync(join(dir, 'ran.txt'))).toBeTruthy()
+      exec('rm ran.txt')
+
+      exec('git checkout -b beta')
+
+      expect(existsSync(join(dir, 'ran.txt'))).toBeFalsy()
+      exec(`${gudetama} run-if-needed run-tests`)
+      expect(existsSync(join(dir, 'ran.txt'))).toBeTruthy()
+      exec('rm ran.txt')
+
+      // input didn't change but should run anyway because we're on the beta branch
+      exec(`${gudetama} run-if-needed run-tests`)
+      expect(existsSync(join(dir, 'ran.txt'))).toBeTruthy()
+    })
+  }
+)
