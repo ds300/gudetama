@@ -12,6 +12,7 @@ import { FSBackend } from './store/FSBackend'
 
 import isCi from 'is-ci'
 import { gray } from 'kleur'
+import { getManifest } from './manifest/getManifest'
 
 function getCurrentBranch() {
   try {
@@ -120,7 +121,7 @@ export function shouldRunStepOnCurrentBranch({
   stepName,
 }: {
   stepName: string
-}): 'maybe' | 'no' | 'always' {
+}): 'maybe' | 'no' | 'always' | 'always because no inputs' {
   const step = getStep({ stepName })
   if (
     step.branches?.never?.includes(getConfig().currentBranch) ||
@@ -132,6 +133,10 @@ export function shouldRunStepOnCurrentBranch({
 
   if (step.branches?.always?.includes(getConfig().currentBranch)) {
     return 'always'
+  }
+
+  if (getManifest({ stepName }).length === 0) {
+    return 'always because no inputs'
   }
 
   return 'maybe'

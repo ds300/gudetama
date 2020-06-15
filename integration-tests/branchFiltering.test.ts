@@ -55,10 +55,11 @@ describeIntegrationTest(
 )
 
 describeIntegrationTest(
-  'only semantics',
+  'the only branch filter option',
   ({ exec, dir, gudetama, writeConfig }) => {
     exec('git init')
     exec('git commit --allow-empty -m initial')
+
     it(`only runs on the specified branch`, async () => {
       expect(exec('git rev-parse --abbrev-ref HEAD')).toBe('master')
       writeConfig({
@@ -80,6 +81,44 @@ describeIntegrationTest(
       exec('git checkout -b beta')
       exec(`${gudetama} run-if-needed only-on-beta`)
       expect(existsSync(join(dir, 'ran.txt'))).toBeTruthy()
+    })
+  }
+)
+
+describeIntegrationTest(
+  'the never branch filter option',
+  ({ exec, dir, gudetama, writeConfig }) => {
+    exec('git init')
+    exec('git commit --allow-empty -m initial')
+
+    it(`never runs on the specified branch`, async () => {
+      expect(exec('git rev-parse --abbrev-ref HEAD')).toBe('master')
+      writeConfig({
+        ...defaultConfig,
+        steps: {
+          'never-on-beta': {
+            command: 'touch ran.txt',
+            branches: {
+              never: ['beta'],
+            },
+          },
+        },
+      })
+      expect(existsSync(join(dir, 'ran.txt'))).toBeFalsy()
+
+      exec(`${gudetama} run-if-needed never-on-beta`)
+      expect(existsSync(join(dir, 'ran.txt'))).toBeTruthy()
+      unlinkSync(join(dir, 'ran.txt'))
+
+      exec('git checkout -b not-beta')
+      exec(`${gudetama} run-if-needed never-on-beta`)
+      expect(existsSync(join(dir, 'ran.txt'))).toBeTruthy()
+      unlinkSync(join(dir, 'ran.txt'))
+
+      exec('git checkout -b beta')
+      expect(existsSync(join(dir, 'ran.txt'))).toBeFalsy()
+      exec(`${gudetama} run-if-needed never-on-beta`)
+      expect(existsSync(join(dir, 'ran.txt'))).toBeFalsy()
     })
   }
 )

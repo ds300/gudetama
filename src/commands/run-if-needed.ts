@@ -15,7 +15,7 @@ import fs from 'fs'
 export async function runIfNeeded({ stepName }: { stepName: string }) {
   const store = GudetamaStore.fromConfig()
   switch (shouldRunStepOnCurrentBranch({ stepName })) {
-    case 'always':
+    case 'always': {
       const done = log.timedTask(
         `Running ${renderStepName({
           stepName,
@@ -24,6 +24,17 @@ export async function runIfNeeded({ stepName }: { stepName: string }) {
       await runCommand({ stepName })
       done('Finished')
       return
+    }
+    case 'always because no inputs': {
+      const done = log.timedTask(
+        `Running ${renderStepName({
+          stepName,
+        })} because the task has no declared inputs`
+      )
+      await runCommand({ stepName })
+      done('Finished')
+      return
+    }
     case 'no':
       log.task(
         `Skipping ${renderStepName({
