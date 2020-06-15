@@ -13,7 +13,7 @@ async function cli(args: string[]) {
     process.exit()
   }
   if (args.includes('--help' || args.includes('-h'))) {
-    console.log(version)
+    help()
     process.exit()
   }
   if (args.includes('--silent')) {
